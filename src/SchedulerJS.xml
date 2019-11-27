@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="sibelco.schedulerjs.SchedulerJS" pluginWidget="true" needsEntityContext="true" offlineCapable="false"
+        supportedPlatform="Web"
+        xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
+    <name>Scheduler JS</name>
+    <description>Schedule tasks to resources</description>
+    <icon/>
+    <properties>
+        <propertyGroup caption="Data source">
+            <property key="resourceSource" type="string" required="true">
+                <caption>Resources</caption>
+                <description>Enter the name of the microflow which retrieves the resources.</description>
+            </property>
+            <property key="taskSource" type="string" required="true">
+                <caption>Tasks</caption>
+                <description>Enter the name of the microflow which retrieves the tasks.</description>
+            </property>
+            <property key="startDate" type="attribute">
+                <caption>Start date</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="endDate" type="attribute">
+                <caption>End date</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="planningArea" type="attribute">
+                <caption>Planning area</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Behaviour">
+            <property key="workStartTime" type="attribute">
+                <caption>Work start time</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="workEndTime" type="attribute">
+                <caption>Work end time</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="showWeekend" type="attribute">
+                <caption>Show weekend</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="Boolean"/>
+                </attributeTypes>
+            </property>
+            <property key="allowOutsideHoursPlanning" type="attribute">
+                <caption>Allow planning outside hours</caption>
+                <description>Allow planning outside the working hours.</description>
+                <attributeTypes>
+                    <attributeType name="Boolean"/>
+                </attributeTypes>
+            </property>
+        </propertyGroup>
+    </properties>
+</widget>
