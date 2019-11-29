@@ -2,11 +2,12 @@ import { Component, createElement } from "react";
 import Scheduler, { CellUnits, SchedulerData, ViewTypes } from "react-big-scheduler";
 import "react-big-scheduler/lib/css/style.css";
 import moment from "moment";
-//import withDragDropContext from "./components/withDnDContext";
+import withDragDropContext from "./components/withDnDContext";
 
 import "./ui/SchedulerJS.css";
 
 class SchedulerJS extends Component {
+
     constructor(props) {
         super(props);
 
@@ -45,7 +46,7 @@ class SchedulerJS extends Component {
         this.setResources(schedulerData);
 
         // Set tasks
-        //this.setTasks(schedulerData);
+        this.setTasks(schedulerData);
     }
 
     getObjectContext = obj => {
@@ -64,8 +65,8 @@ class SchedulerJS extends Component {
         return new window.mendix.lib.MxContext();
     };
 
-    executeMicroflow = (microFlow, context, origin) => {
-        new Promise((resolve, reject) => {
+    async executeMicroflow(microFlow, context, origin) {
+        return new Promise((resolve, reject) => {
             if (!microFlow || microFlow === "") {
                 return reject(new Error("Microflow parameter cannot be empty!"));
             }
@@ -79,8 +80,8 @@ class SchedulerJS extends Component {
                     callback: resolve,
                     error: reject
                 });
-            } catch (e) {
-                reject(e);
+            } catch (error) {
+                reject(error);
             }
         });
     }
@@ -88,61 +89,58 @@ class SchedulerJS extends Component {
     setResources = (schedulerData) => {
         const { mxform } = this.props;
         const context = this.getContext();
-        logger.debug(this.props.mxObject.getGuid());
-        var resources = [];
-            this.executeMicroflow(this.props.resourceSource, context, mxform)
-                .then((mxObjects) => {
-                    logger.debug(mxObjects);
-//                    logger.debug("Received " + mxObjects.length + " resources");
-                    mxObjects.forEach(resource =>
-                        resources.push({
-                            id: resource.get("ResourceID"),
-                            name: resource.get("Name"),
-                            groupOnly: resource.get("GroupOnly"),
-                            parentId: resource.get("ParentID")
-                        })
-                    );
-                    schedulerData.setResources(resources);
-                    this.setState({
-                        viewModel: schedulerData
-                    });
-                })
-                .catch (error => {
-                    alert(error.message);
+        this.executeMicroflow(this.props.resourceSource, context, mxform)
+            .then((mxObjects) => {
+                var resources = [];
+                this.debug("Received resources", mxObjects.length);
+                mxObjects.forEach(resource =>
+                    resources.push({
+                        id: resource.get("ResourceID"),
+                        name: resource.get("Name"),
+                        groupOnly: resource.get("GroupOnly"),
+                        parentId: resource.get("ParentID")
+                    })
+                );
+                schedulerData.setResources(resources);
+                this.setState({
+                    viewModel: schedulerData
                 });
-        logger.debug(resources);
+            })
+            .catch (error => {
+                this.showMendixError(`handle set Resources`, error);
+            });
     }
 
-    async setTasks(schedulerData) {
+    setTasks(schedulerData) {
         const { mxform } = this.props;
         const context = this.getContext();
-        var tasks = [];
-        try {
-            var objs = await this.executeMicroflow(this.props.taskSource, context, mxform);
-            logger.debug("Received " + objs.length + " tasks");
-            objs.forEach(task =>
-                tasks.push({
-                    id: task.get("TaskID"),
-                    start: task.get("StartDate"),
-                    end: task.get("EndDate"),
-                    title: task.get("Title"),
-                    bgColor: task.get("BgColor"),
-                    showPopover: task.get("ShowTooltip"),
-                    resizable: task.get("Resizable"),
-                    startResizable: task.get("StartResizable"),
-                    endResizable: task.get("EndResizable"),
-                    movable: task.get("Movable"),
-                    resourceId: task.get("ResourceID")
-                })
-            );
-            schedulerData.setEvents(tasks);
-            this.setState({
-                viewModel: schedulerData
+        this.executeMicroflow(this.props.taskSource, context, mxform)
+            .then((mxObjects) => {
+                var tasks = [];
+                this.debug("Received tasks", mxObjects.length);
+                mxObjects.forEach(task =>
+                    tasks.push({
+                        id: task.get("TaskID"),
+                        start: task.get("StartDate"),
+                        end: task.get("EndDate"),
+                        title: task.get("Title"),
+                        bgColor: task.get("BgColor"),
+                        showPopover: task.get("ShowTooltip"),
+                        resizable: task.get("Resizable"),
+                        startResizable: task.get("StartResizable"),
+                        endResizable: task.get("EndResizable"),
+                        movable: task.get("Movable"),
+                        resourceId: task.get("ResourceID")
+                    })
+                );
+                schedulerData.setEvents(tasks);
+                this.setState({
+                    viewModel: schedulerData
+                });
+            })
+            .catch (error => {
+                this.showMendixError(`handle set Tasks`, error);
             });
-        } catch (error) {
-            alert(error.message);
-        }
-        logger.debug(tasks);
     }
 
     nonAgendaCellHeaderTemplateResolver = (schedulerData, item, formattedDateItems, style) => {
@@ -174,8 +172,6 @@ class SchedulerJS extends Component {
 
     render() {
         const { viewModel } = this.state;
-
-        logger.debug(this.props.mxObject.getGuid());
 
         return (
             <Scheduler
@@ -217,10 +213,10 @@ class SchedulerJS extends Component {
                 mx.data.commit({
                     mxobj: obj,
                     callback: function() {
-                        logger.debug("Object committed");
+                        this.debug("Object committed");
                     },
-                    error: function(e) {
-                        logger.debug("Could not commit object:", e);
+                    error: function(error) {
+                        this.debug("Could not commit object:", error);
                     }
                 });
             }
@@ -253,7 +249,7 @@ class SchedulerJS extends Component {
 
     unplan = (schedulerData, event) => {
         if (confirm(`Do you want to unplan this task? {eventId: ${event.id}, eventTitle: ${event.title}}`)) {
-            logger.debug(event);
+            this.debug("Event", event);
             // Update task
             this.updateTask(
                 event.id,
@@ -374,7 +370,19 @@ class SchedulerJS extends Component {
             viewModel: schedulerData
         });
     };
+
+    debug = (...args) => {
+//        const id = this.props.friendlyId || this.widgetId;
+        if (window.logger) {
+            window.logger.debug(...args);
+        }
+    }
+
+    showMendixError = (actionName, error) => {
+        if (error && error.message) {
+            window.mx.ui.error(`An error occured in ${actionName} :: ${error.message}`);
+        }
+    }
 }
 
-//export default withDragDropContext(SchedulerJS);
-export default SchedulerJS;
+export default withDragDropContext(SchedulerJS);
