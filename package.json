@@ -1,5 +1,5 @@
 {
-  "name": "scheduler2",
+  "name": "schedulerjs",
   "widgetName": "SchedulerJS",
   "version": "1.0.0",
   "description": "Schedule tasks to resources",
@@ -11,7 +11,7 @@
     "mendixHost": "http://localhost:8080",
     "developmentPort": "3000"
   },
-  "packagePath": "sibelco",
+  "packagePath": "com.sibelco.widget.custom",
   "scripts": {
     "start": "concurrently \"pluggable-widgets-tools start:server --open\" \"npm:dev\"",
     "dev": "pluggable-widgets-tools start:js",
@@ -23,7 +23,9 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@mendix/pluggable-widgets-tools": "^8.3.1"
+    "@mendix/pluggable-widgets-tools": "^8.3.1", 
+    "mendix-client": "^7.15.8",
+    "webpack-bundle-analyzer": "^3.6.0"
   },
   "dependencies": {
     "big.js": "^5.2.2",
