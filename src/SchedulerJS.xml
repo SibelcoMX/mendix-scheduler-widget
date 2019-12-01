@@ -16,6 +16,10 @@
                 <caption>Tasks</caption>
                 <description>Enter the name of the microflow which retrieves the tasks.</description>
             </property>
+            <property key="taskResourceReference" type="string" required="true">
+                <caption>Resource reference</caption>
+                <description>Enter the name of the reference from task to resource.</description>
+            </property>
             <property key="startDate" type="attribute">
                 <caption>Start date</caption>
                 <description/>
@@ -66,6 +70,10 @@
                 <attributeTypes>
                     <attributeType name="Boolean"/>
                 </attributeTypes>
+            </property>
+            <property key="resourcePage" type="string" required="true">
+                <caption>Resource page</caption>
+                <description>Enter the name of the resource page.</description>
             </property>
         </propertyGroup>
     </properties>

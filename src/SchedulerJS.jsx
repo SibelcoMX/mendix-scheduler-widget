@@ -6,6 +6,7 @@ import withDragDropContext from "./components/withDnDContext";
 import "./components/mendixUtils"
 
 import "./ui/SchedulerJS.css";
+import { SSL_OP_NETSCAPE_CHALLENGE_BUG } from "constants";
 
 class SchedulerJS extends Component {
 
@@ -27,6 +28,9 @@ class SchedulerJS extends Component {
             {
                 schedulerWidth: "90%",
                 nonAgendaDayCellHeaderFormat: "HH:mm",
+                dayStartFrom: 5,
+                dayStopTo: 22,
+                minuteStep: 15,
                 views: [
                     { viewName: "Day", viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
                     { viewName: "Week", viewType: ViewTypes.Week, showAgenda: false, isEventPerspective: false },
@@ -164,6 +168,7 @@ class SchedulerJS extends Component {
                 onScrollTop={this.onScrollTop}
                 onScrollBottom={this.onScrollBottom}
                 nonAgendaCellHeaderTemplateResolver={this.nonAgendaCellHeaderTemplateResolver}
+                slotClickedFunc={this.slotClickedFunc}
                 toggleExpandFunc={this.toggleExpandFunc}
             />
         );
@@ -173,11 +178,15 @@ class SchedulerJS extends Component {
         // Update task
         getObject(taskId)
             .then((mxObject) => {
-                mxObject.set("StartDate", moment(startDate, "YYYY-MM-DD HH:mm:ss").toDate());
-                mxObject.set("EndDate", moment(endDate, "YYYY-MM-DD HH:mm:ss").toDate());
-                if (newSlotId !== oldSlotId) {
-                    if (newSlotId === "0") mxObject.removeReferences("TestApp.Task_Resource", [newSlotId]);
-                    else mxObject.addReference("TestApp.Task_Resource", newSlotId);
+                if (startDate !== undefined)
+                    mxObject.set("StartDate", moment(startDate, "YYYY-MM-DD HH:mm:ss").toDate());
+                if (endDate !== undefined)
+                    mxObject.set("EndDate", moment(endDate, "YYYY-MM-DD HH:mm:ss").toDate());
+                if (newSlotId !== undefined && newSlotId !== oldSlotId) {
+                    if (newSlotId === "0")
+                        mxObject.removeReferences(this.props.taskResourceReference, [newSlotId]);
+                    else
+                        mxObject.addReference(this.props.taskResourceReference, newSlotId);
                 }
                 commitObject(mxObject)
                     .catch(error => {
@@ -221,7 +230,6 @@ class SchedulerJS extends Component {
 
     unplan = (schedulerData, event) => {
         if (confirm(`Do you want to unplan this task? {eventId: ${event.id}, eventTitle: ${event.title}}`)) {
-            this.debug("Event", event);
             // Update task
             this.updateTask(
                 event.id,
@@ -247,11 +255,13 @@ class SchedulerJS extends Component {
                 `Do you want to adjust the start of the event? {eventId: ${event.id}, eventTitle: ${event.title}, newStart: ${newStart}}`
             )
         ) {
+            // Update task
+            this.updateTask(event.id, newStart, undefined, undefined, undefined);
             schedulerData.updateEventStart(event, newStart);
+            this.setState({
+                viewModel: schedulerData
+            });
         }
-        this.setState({
-            viewModel: schedulerData
-        });
     };
 
     updateEventEnd = (schedulerData, event, newEnd) => {
@@ -260,11 +270,13 @@ class SchedulerJS extends Component {
                 `Do you want to adjust the end of the event? {eventId: ${event.id}, eventTitle: ${event.title}, newEnd: ${newEnd}}`
             )
         ) {
+            // Update task
+            this.updateTask(event.id, undefined, newEnd, undefined, undefined);
             schedulerData.updateEventEnd(event, newEnd);
+            this.setState({
+                viewModel: schedulerData
+            });
         }
-        this.setState({
-            viewModel: schedulerData
-        });
     };
 
     moveEvent = (schedulerData, event, slotId, slotName, start, end) => {
@@ -290,7 +302,7 @@ class SchedulerJS extends Component {
                     viewModel: schedulerData
                 });
             } else {
-                showMendixError("Unable to plan outside working hours.");
+                showMendixError("moveEvent", new Error("Unable to plan outside working hours."));
             }
         }
     };
@@ -336,6 +348,10 @@ class SchedulerJS extends Component {
         return false;
     };
 
+    slotClickedFunc = (schedulerData, slot) => {
+        openPage({pageName: this.props.resourcePage}, getObjectContextFromId(slot.slotId, 'TestApp.Resource'));
+    }
+    
     toggleExpandFunc = (schedulerData, slotId) => {
         schedulerData.toggleExpandStatus(slotId);
         this.setState({
