@@ -3,6 +3,7 @@ import Scheduler, { CellUnits, SchedulerData, ViewTypes } from "react-big-schedu
 import "react-big-scheduler/lib/css/style.css";
 import moment from "moment";
 import withDragDropContext from "./components/withDnDContext";
+import "./components/mendixUtils"
 
 import "./ui/SchedulerJS.css";
 
@@ -41,55 +42,10 @@ class SchedulerJS extends Component {
         this.state = {
             viewModel: schedulerData
         };
-
-        // Set resources
-        this.setResources(schedulerData);
-
-        // Set tasks
-        this.setTasks(schedulerData);
-    }
-
-    getObjectContext = obj => {
-        const context = new mendix.lib.MxContext();
-        context.setContext(obj.getEntity(), obj.getGuid());
-        return context;
-    };
-
-    getContext = obj => {
-        if (obj && obj.getGuid) {
-            return getObjectContext(obj);
-        } else if (this.props.mxObject) {
-            return this.getObjectContext(this.props.mxObject);
-        }
-
-        return new window.mendix.lib.MxContext();
-    };
-
-    async executeMicroflow(microFlow, context, origin) {
-        return new Promise((resolve, reject) => {
-            if (!microFlow || microFlow === "") {
-                return reject(new Error("Microflow parameter cannot be empty!"));
-            }
-            try {
-                window.mx.data.action({
-                    params: {
-                        actionname: microFlow
-                    },
-                    context: context,
-                    origin: origin,
-                    callback: resolve,
-                    error: reject
-                });
-            } catch (error) {
-                reject(error);
-            }
-        });
     }
 
     setResources = (schedulerData) => {
-        const { mxform } = this.props;
-        const context = this.getContext();
-        this.executeMicroflow(this.props.resourceSource, context, mxform)
+        executeMicroflow(this.props.resourceSource)
             .then((mxObjects) => {
                 var resources = [];
                 this.debug("Received resources", mxObjects.length);
@@ -107,14 +63,12 @@ class SchedulerJS extends Component {
                 });
             })
             .catch (error => {
-                this.showMendixError(`handle set Resources`, error);
+                showMendixError(`setResources`, error);
             });
     }
 
-    setTasks(schedulerData) {
-        const { mxform } = this.props;
-        const context = this.getContext();
-        this.executeMicroflow(this.props.taskSource, context, mxform)
+    setTasks = (schedulerData) => {
+        executeMicroflow(this.props.taskSource)
             .then((mxObjects) => {
                 var tasks = [];
                 this.debug("Received tasks", mxObjects.length);
@@ -139,7 +93,7 @@ class SchedulerJS extends Component {
                 });
             })
             .catch (error => {
-                this.showMendixError(`handle set Tasks`, error);
+                showMendixError(`setTasks`, error);
             });
     }
 
@@ -170,7 +124,24 @@ class SchedulerJS extends Component {
         );
     };
 
-    render() {
+    componentDidMount = () => {
+        var schedulerData = this.state.viewModel;
+        this.setResources(schedulerData);
+        this.setTasks(schedulerData);
+    }
+
+    componentDidUpdate = (prevProps) => {
+        var schedulerData = this.state.viewModel;
+        if (this.props.startDate.value !== prevProps.startDate.value
+            || this.props.endDate.value !== prevProps.endDate.value
+            || this.props.planningArea.value !== prevProps.planningArea.value) {
+            // Set tasks
+            this.debug('componentDidUpdate');
+            this.setTasks(schedulerData);
+        }
+    }
+ 
+    render = () => {
         const { viewModel } = this.state;
 
         return (
@@ -198,49 +169,50 @@ class SchedulerJS extends Component {
         );
     }
 
-    updateTask(taskId, startDate, endDate, oldSlotId, newSlotId) {
+    updateTask = (taskId, startDate, endDate, oldSlotId, newSlotId) => {
         // Update task
-        mx.data.get({
-            guid: taskId,
-            callback: function(obj) {
-                obj.set("StartDate", moment(startDate, "YYYY-MM-DD HH:mm:ss").toDate());
-                obj.set("EndDate", moment(endDate, "YYYY-MM-DD HH:mm:ss").toDate());
+        getObject(taskId)
+            .then((mxObject) => {
+                mxObject.set("StartDate", moment(startDate, "YYYY-MM-DD HH:mm:ss").toDate());
+                mxObject.set("EndDate", moment(endDate, "YYYY-MM-DD HH:mm:ss").toDate());
                 if (newSlotId !== oldSlotId) {
-                    if (newSlotId === "0") obj.removeReferences("TestApp.Task_Resource", [newSlotId]);
-                    else obj.addReference("TestApp.Task_Resource", newSlotId);
+                    if (newSlotId === "0") mxObject.removeReferences("TestApp.Task_Resource", [newSlotId]);
+                    else mxObject.addReference("TestApp.Task_Resource", newSlotId);
                 }
-                // and commit
-                mx.data.commit({
-                    mxobj: obj,
-                    callback: function() {
-                        this.debug("Object committed");
-                    },
-                    error: function(error) {
-                        this.debug("Could not commit object:", error);
-                    }
-                });
-            }
-        });
+                commitObject(mxObject)
+                    .catch(error => {
+                        showMendixError('updateTask, commitObject', error);
+                    })
+            })
+            .catch(error => {
+                showMendixError('updateTask, getObject', error);
+            });
     }
+
+    updateDateRange = (startDate, endDate) => {
+        this.debug('dateRange', 'startDate:', startDate, 'endDate', endDate);
+        this.props.startDate.setValue(moment(startDate, "YYYY-MM-DD").toDate());
+        this.props.endDate.setValue(moment(endDate, "YYYY-MM-DD").toDate());
+    };
 
     prevClick = schedulerData => {
         schedulerData.prev();
-        this.setTasks(schedulerData);
+        this.updateDateRange(schedulerData.startDate, schedulerData.endDate);
     };
 
     nextClick = schedulerData => {
         schedulerData.next();
-        this.setTasks(schedulerData);
+        this.updateDateRange(schedulerData.startDate, schedulerData.endDate);
     };
 
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
-        this.setTasks(schedulerData);
+        this.updateDateRange(schedulerData.startDate, schedulerData.endDate);
     };
 
     onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
-        this.setTasks(schedulerData);
+        this.updateDateRange(schedulerData.startDate, schedulerData.endDate);
     };
 
     eventClicked = (schedulerData, event) => {
@@ -318,7 +290,7 @@ class SchedulerJS extends Component {
                     viewModel: schedulerData
                 });
             } else {
-                alert("Unable to plan outside working hours.");
+                showMendixError("Unable to plan outside working hours.");
             }
         }
     };
@@ -326,7 +298,7 @@ class SchedulerJS extends Component {
     onScrollRight = (schedulerData, schedulerContent, maxScrollLeft) => {
         if (schedulerData.ViewTypes === ViewTypes.Day) {
             schedulerData.next();
-            this.setTasks(schedulerData);
+            this.updateDateRange(schedulerData.startDate, schedulerData.endDate);
             schedulerContent.scrollLeft = maxScrollLeft - 10;
         }
     };
@@ -334,7 +306,7 @@ class SchedulerJS extends Component {
     onScrollLeft = (schedulerData, schedulerContent, maxScrollLeft) => {
         if (schedulerData.ViewTypes === ViewTypes.Day) {
             schedulerData.prev();
-            this.setTasks(schedulerData);
+            this.updateDateRange(schedulerData.startDate, schedulerData.endDate);
             schedulerContent.scrollLeft = 10;
         }
     };
@@ -372,17 +344,12 @@ class SchedulerJS extends Component {
     };
 
     debug = (...args) => {
-//        const id = this.props.friendlyId || this.widgetId;
         if (window.logger) {
+            //window.logger.debug(`${this.props.name}:`, ...args);
             window.logger.debug(...args);
         }
     }
 
-    showMendixError = (actionName, error) => {
-        if (error && error.message) {
-            window.mx.ui.error(`An error occured in ${actionName} :: ${error.message}`);
-        }
-    }
 }
 
 export default withDragDropContext(SchedulerJS);
