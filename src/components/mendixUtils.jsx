@@ -5,23 +5,79 @@
  * @param microflow Microflow name
  */
 executeMicroflow = (microFlow) => {
-  return new Promise((resolve, reject) => {
-      if (!microFlow || microFlow === "") {
-          return reject(new Error("Microflow parameter cannot be empty!"));
-      }
-      try {
-          window.mx.data.action({
-              params: {
-                  actionname: microFlow
-              },
-              callback: resolve,
-              error: reject
-          });
-      } catch (error) {
-          reject(error);
-      }
-  });
+    return new Promise((resolve, reject) => {
+        if (!microFlow || microFlow === "") {
+            return reject(new Error("Microflow parameter cannot be empty!"));
+        }
+        try {
+            window.mx.data.action({
+                params: {
+                    actionname: microFlow
+                },
+                callback: resolve,
+                error: reject
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
+
+/**
+* Execute a microflow as Promise with one object
+*
+* @name executeMicroflowWithObject
+* @param microflow Microflow name
+* @param guid
+*/
+executeMicroflowWithObject = (microFlow, guid) => {
+    return new Promise((resolve, reject) => {
+        if (!microFlow || microFlow === "") {
+            return reject(new Error("Microflow parameter cannot be empty!"));
+        }
+        try {
+            window.mx.data.action({
+                params: {
+                    actionname: microFlow,
+                    guid: guid
+                },
+                callback: resolve,
+                error: reject
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+// from here
+
+/**
+ * Create a Mendix Object
+ *
+ * @name createObject
+ * @param entity Entity of the object you want to create
+ */
+createObject = (entity) => {
+    return new Promise((resolve, reject) => {
+        window.mx.data.create({ entity: entity, callback: resolve, error: reject });
+    });
+}
+
+/**
+ * Delete a Mendix Object
+ *
+ * @name deleteObject
+ * @param guid of the object you want to delete
+ */
+deleteObject = (guid) => {
+    return new Promise((resolve, reject) => {
+        window.mx.data.remove({ guid: guid, callback: resolve, error: reject });
+    });
+}
+
+// to here
+
 
 /**
  * Get a Mendix Object
@@ -30,9 +86,9 @@ executeMicroflow = (microFlow) => {
  * @param guid Object guid of the Mendix Object that you try to return
  */
 getObject = (guid) => {
-  return new Promise((resolve, reject) => {
-      window.mx.data.get({guid: guid, callback: resolve, error: reject});
-  });
+    return new Promise((resolve, reject) => {
+        window.mx.data.get({ guid: guid, callback: resolve, error: reject });
+    });
 }
 
 /**
@@ -42,9 +98,9 @@ getObject = (guid) => {
  * @param mxObject Mendix Object that will be committed to the server
  */
 commitObject = (mxObject) => {
-  return new Promise((resolve, reject) => {
-      window.mx.data.commit({mxobj: mxObject, callback: resolve, error: reject});
-  });
+    return new Promise((resolve, reject) => {
+        window.mx.data.commit({ mxobj: mxObject, callback: resolve, error: reject });
+    });
 }
 
 /**
@@ -83,8 +139,66 @@ openPage = (pageAction, context) => {
     });
 };
 
+askConfirmation = (question) => {
+    return new Promise(resolve => {
+        window.mx.ui.confirmation({
+            content: question,
+            proceed: "OK",
+            cancel: "Cancel",
+            handler: () => resolve(true),
+            onCancel: () => resolve(false)
+        });
+    });
+}
+
 showMendixError = (actionName, error) => {
-  if (error && error.message) {
-      window.mx.ui.error(`An error occured in ${actionName} :: ${error.message}`);
-  }
+    if (error && error.message) {
+        window.mx.ui.error(`An error occured in ${actionName} :: ${error.message}`);
+    }
+}
+
+showInfo = (message, modal) => {
+    window.mx.ui.info(message, modal);
+}
+
+showWarning = (message, modal) => {
+    window.mx.ui.warning(message, modal);
+}
+
+showError = (message, modal) => {
+    window.mx.ui.error(message, modal);
+}
+
+showProgress = (message, modal) => {
+    var pid = window.mx.ui.showProgress(message, modal);
+    return pid;
+}
+
+hideProgress = (pid) => {
+    window.mx.ui.hideProgress(pid);
+}
+
+/**
+* Retrieve objects from Mendix by XPath
+*
+* @name retrieveObjects
+* @param module where the entity is in the domain
+* @param Entity name of the entity to retrieve
+* @param XPath constraints can be empty to retrieve all objects
+*/
+
+retrieveObjects = (module, entity, xPath = '') => {
+    return new Promise((resolve, reject) => {
+        try {
+            let fullXpath = '//' + module + '.' + entity + xPath;
+            mx.data.get({
+                xpath: fullXpath,
+                callback: resolve,
+                error: reject
+            });
+        }
+        catch (error) {
+            reject(error);
+        }
+    })
 }

@@ -6,8 +6,8 @@
   "copyright": "Sibelco 2019",
   "author": "Guido Zeelen",
   "config": {
-    "widgetPath": "../../../Mendixx/TestApp/widgets",
-    "projectPath": "../../../Mendixx/TestApp/",
+    "widgetPath": "../../../Mendix/PMScheduler-main/widgets",
+    "projectPath": "../../../Mendix/PMScheduler-main/",
     "mendixHost": "http://localhost:8080",
     "developmentPort": "3000"
   },
