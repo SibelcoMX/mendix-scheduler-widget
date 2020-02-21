@@ -442,17 +442,14 @@ class SchedulerJS extends Component {
 
     eventClicked = (schedulerData, event) => {
         if (this.props.editPermission.value === true) {
-            let title = new String;
             let microflow = new String();
-            if (event.title === this.props.vacationTitle) {
-                title = this.props.vacationTitle;
+            if (event.isVacation) {
                 microflow = this.props.vacationClick;
             }
             else {
-                title = 'Task';
                 microflow = this.props.taskClick;
             }
-            askConfirmation(`Do you want to edit operation "${title}"?`)
+            askConfirmation(`Do you want to edit operation "${event.title}"?`)
                 .then(proceed => {
                     if (proceed) {
                         this.props.clickedTask.setValue(event.id);
