@@ -39,7 +39,7 @@ class SchedulerJS extends Component {
 
                 setMinuteStep: 30,
                 schedulerWidth: '90%',
-                nonAgendaDayCellHeaderFormat: 'M/D|HH:mm',
+                nonAgendaDayCellHeaderFormat: 'ddd|HH:mm',
                 views: [
                     { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
                     { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
