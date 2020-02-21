@@ -39,7 +39,7 @@ class SchedulerJS extends Component {
 
                 setMinuteStep: 30,
                 schedulerWidth: '90%',
-                nonAgendaDayCellHeaderFormat: 'HH:mm',
+                nonAgendaDayCellHeaderFormat: 'M/D|HH:mm',
                 views: [
                     { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
                     { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
@@ -419,18 +419,20 @@ class SchedulerJS extends Component {
 
     prevClick = (schedulerData) => {
         schedulerData.prev();
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        this.setTasks(schedulerData);
+        // this.setDateRange(schedulerData.startDate, schedulerData.endDate);
     }
 
     nextClick = (schedulerData) => {
         schedulerData.next();
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        this.setTasks(schedulerData);
+        // this.setDateRange(schedulerData.startDate, schedulerData.endDate);
     }
 
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
         this.setTasks(schedulerData);
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        // this.setDateRange(schedulerData.startDate, schedulerData.endDate);
     }
 
     onSelectDate = (schedulerData, date) => {
@@ -765,14 +767,8 @@ class SchedulerJS extends Component {
                                     .then((mxObject) => {
                                         mxObject.set('TaskID', mxObject.getGuid());
                                         mxObject.set('Title', this.props.vacationTitle);
-                                        let dayStartHour = localeMoment(this.props.workStartTime.value).hour();
-                                        let dayEndHour = localeMoment(this.props.workEndTime.value).hour() + 1;
-                                        if (schedulerData.viewType === ViewTypes.Day || schedulerData.viewType === ViewTypes.Custom) {
-                                            mxObject.set('StartDate', moment(start, 'YYYY-MM-DD HH:mm:ss').toDate());
-                                        } else {
-                                            mxObject.set('StartDate', moment(start, 'YYYY-MM-DD HH:mm:ss').startOf('day').add(dayStartHour, 'hours').toDate());
-                                        }
-                                        mxObject.set('EndDate', moment(end, 'YYYY-MM-DD HH:mm:ss').startOf('day').add(dayEndHour, 'hours').toDate());
+                                        mxObject.set('StartDate', moment(start, 'YYYY-MM-DD HH:mm:ss').toDate());
+                                        mxObject.set('EndDate', moment(end, 'YYYY-MM-DD HH:mm:ss').toDate());
                                         mxObject.set('BgColor', 'black');
                                         mxObject.set('Resizable', true);
                                         mxObject.set('StartResizable', true);
