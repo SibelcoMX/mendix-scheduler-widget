@@ -39,7 +39,7 @@ class SchedulerJS extends Component {
 
                 setMinuteStep: 30,
                 schedulerWidth: '90%',
-                nonAgendaDayCellHeaderFormat: 'ddd|HH:mm',
+                nonAgendaDayCellHeaderFormat: 'HH:mm',
                 views: [
                     { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
                     { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
@@ -107,7 +107,6 @@ class SchedulerJS extends Component {
                         allLoaded = false;
                     }
                 }
-                this.debug(allLoaded);
                 if (allLoaded) {
                     this.setState({
                         propertiesLoaded: allLoaded
@@ -204,9 +203,10 @@ class SchedulerJS extends Component {
                 .then((mxObjects) => {
                     var tasks = [];
                     this.debug("Received tasks", mxObjects.length);
+                    this.debug('Tasks: ', mxObjects);
                     mxObjects.forEach(task =>
                         tasks.push({
-                            id: task.get("TaskID"),
+                            id: task.getGuid(),
                             title: task.get("Title"),
                             description: task.get('Description'),
                             start: task.get("StartDate"),
@@ -220,9 +220,7 @@ class SchedulerJS extends Component {
                             resourceId: task.get("ResourceID"),
                             isVacation: task.get("IsVacation"),
                             orderNumber: task.get("OrderNumber"),
-                            operationNumber: task.get("OperationNumber"),
                             employeeNumber: task.get("EmployeeNumber"),
-                            operationID: task.get("OperationID")
                         })
                     );
                     schedulerData.setEvents(tasks);
@@ -243,35 +241,61 @@ class SchedulerJS extends Component {
     updateTask(event, startDate, endDate, oldSlotId, newSlotId) {
         const schedulerData = this.state.viewModel;
         this.debug(event);
-        createObject('PMScheduler.Task')
-            .then((task) => {
-                task.set('TaskID', event.id);
-                task.set("Title", event.title);
-                task.set("Description", event.description);
-                task.set("BgColor", event.bgColor);
-                task.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
-                task.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
-                task.set('IsVacation', event.isVacation);
-                task.set('ResourceId', newSlotId);
-                task.set('OrderNumber', event.orderNumber);
-                task.set('OperationNumber', event.operationNumber);
-                task.set('OperationID', event.operationID);
+        getObject(event.id)
+            .then((capacity) => {
+                capacity.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('ResourceID', newSlotId);
                 if (newSlotId.startsWith('r')) {
-                    task.set('EmployeeNumber', newSlotId.substr(1))
+                    capacity.set('EmployeeNumber', newSlotId.substr(1))
                 }
-                commitObject(task)
-                    .then(() => {
-                        this.setState({
-                            viewModel: schedulerData
-                        });
-                    })
-                    .catch(error => {
-                        showMendixError('newEvent, commitObject', error);
-                    })
+                else {
+                    capacity.set('EmployeeNumber', '')
+                }
+                this.debug('capacity: ' + capacity);
+                commitObject(capacity)
+                .then(() => {
+                    this.debug('Capacity committed');
+                    this.setState({
+                        viewModel: schedulerData
+                    });
+                })
+                .catch(error => {
+                    showMendixError('updateTask, commitObject', error);
+                })
             })
             .catch(error => {
-                showMendixError('newEvent, createObject', error);
+                showMendixError('updateTask, getObject', error);
             });
+        // createObject('PMScheduler.Task')
+        //     .then((task) => {
+        //         task.set('TaskID', event.id);
+        //         task.set("Title", event.title);
+        //         task.set("Description", event.description);
+        //         task.set("BgColor", event.bgColor);
+        //         task.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+        //         task.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+        //         task.set('IsVacation', event.isVacation);
+        //         task.set('ResourceId', newSlotId);
+        //         task.set('OrderNumber', event.orderNumber);
+        //         task.set('OperationNumber', event.operationNumber);
+        //         task.set('OperationID', event.operationID);
+        //         if (newSlotId.startsWith('r')) {
+        //             task.set('EmployeeNumber', newSlotId.substr(1))
+        //         }
+        //         commitObject(task)
+        //             .then(() => {
+        //                 this.setState({
+        //                     viewModel: schedulerData
+        //                 });
+        //             })
+        //             .catch(error => {
+        //                 showMendixError('newEvent, commitObject', error);
+        //             })
+        //     })
+        //     .catch(error => {
+        //         showMendixError('newEvent, createObject', error);
+        //     });
     }
 
     nonAgendaCellHeaderTemplateResolver = (schedulerData, item, formattedDateItems, style) => {
@@ -419,37 +443,39 @@ class SchedulerJS extends Component {
 
     prevClick = (schedulerData) => {
         schedulerData.prev();
-        this.setTasks(schedulerData);
-        // this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
     }
 
     nextClick = (schedulerData) => {
         schedulerData.next();
-        this.setTasks(schedulerData);
-        // this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
     }
 
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
+        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
         this.setTasks(schedulerData);
-        // this.setDateRange(schedulerData.startDate, schedulerData.endDate);
     }
 
     onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
+        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
         this.setTasks(schedulerData);
     }
 
     eventClicked = (schedulerData, event) => {
         if (this.props.editPermission.value === true) {
+            let title = new String;
             let microflow = new String();
-            if (event.isVacation) {
+            if (event.title === this.props.vacationTitle) {
+                title = this.props.vacationTitle;
                 microflow = this.props.vacationClick;
             }
             else {
+                title = 'Task';
                 microflow = this.props.taskClick;
             }
-            askConfirmation(`Do you want to edit operation "${event.title}"?`)
+            askConfirmation(`Do you want to edit operation "${title}"?`)
                 .then(proceed => {
                     if (proceed) {
                         this.props.clickedTask.setValue(event.id);
@@ -660,24 +686,22 @@ class SchedulerJS extends Component {
             id: event.id,
             start: start
         };
-        if (event.isVacation === false) {
-            if (this.checkIfStartEventIsValid(schedulerData, newEvent) === true) {
-                if (this.checkConflictOccurred(schedulerData, event, start, end, slotId) === false) {
-                    schedulerData.moveEvent(event, slotId, slotName, start, end);
-                    this.updateTask(event, start, end, event.resourceId, slotId);
-                    this.setState({
-                        viewModel: schedulerData
-                    });
-                }
-                else {
-                    this.setState({
-                        viewModel: schedulerData
-                    });
-                }
+        if (this.checkIfStartEventIsValid(schedulerData, newEvent) === true) {
+            if (this.checkConflictOccurred(schedulerData, event, start, end, slotId) === false) {
+                schedulerData.moveEvent(event, slotId, slotName, start, end);
+                this.updateTask(event, start, end, event.resourceId, slotId);
+                this.setState({
+                    viewModel: schedulerData
+                });
             }
             else {
-                showWarning('Not allowed to plan outside working hours.');
+                this.setState({
+                    viewModel: schedulerData
+                });
             }
+        }
+        else {
+            showWarning('Not allowed to plan outside working hours.');
         }
     }
 
@@ -719,8 +743,13 @@ class SchedulerJS extends Component {
 
         let startMoment = localeMoment(start)
         let endMoment = localeMoment(end);
-
+        let currentDateTime = new moment();
         let hasConflict = false;
+
+        if(startMoment < currentDateTime){
+            showWarning('No planning allowed in the past.');
+            hasConflict = true;
+        }
 
         if (!slotId.startsWith('u')) {
             let events = this.state.tasks.map(function (res) {
@@ -740,7 +769,7 @@ class SchedulerJS extends Component {
                     let eStart = localeMoment(event.start);
                     let eEnd = localeMoment(event.end);
                     if (event.resourceId === slotId) {
-                        if (startMoment <= eEnd && endMoment >= eStart) {
+                        if (startMoment < eEnd && endMoment > eStart) {
                             hasConflict = true;
                             showWarning('This situation leeds to overlapping.')
                         }
@@ -760,9 +789,8 @@ class SchedulerJS extends Component {
                     askConfirmation(`Do you want to add a ${this.props.vacationTitle} for ${slotName}`)
                         .then((proceed) => {
                             if (proceed) {
-                                createObject('PMScheduler.Task')
+                                createObject('PMScheduler.Capacity')
                                     .then((mxObject) => {
-                                        mxObject.set('TaskID', mxObject.getGuid());
                                         mxObject.set('Title', this.props.vacationTitle);
                                         mxObject.set('StartDate', moment(start, 'YYYY-MM-DD HH:mm:ss').toDate());
                                         mxObject.set('EndDate', moment(end, 'YYYY-MM-DD HH:mm:ss').toDate());
@@ -772,10 +800,22 @@ class SchedulerJS extends Component {
                                         mxObject.set('EndResizable', true);
                                         mxObject.set('Movable', false);
                                         mxObject.set('IsVacation', true);
-                                        mxObject.set('ResourceId', slotId);
-
+                                        mxObject.set('ResourceID', slotId);
+                                        let newEvent = {
+                                            id: mxObject.getGuid(),
+                                            title: this.props.vacationTitle,
+                                            start: moment(start, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                            end: moment(end, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                            resourceId: slotId,
+                                            bgColor: 'black',
+                                            resizable: true,
+                                            movable: true,
+                                            startResizable: true,
+                                            endResizable: true,
+                                         };
                                         commitObject(mxObject)
                                             .then(() => {
+                                                schedulerData.addEvent(newEvent);
                                                 this.setState({
                                                     viewModel: schedulerData
                                                 });
