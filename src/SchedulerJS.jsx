@@ -1,15 +1,14 @@
 import { Component, createElement } from "react";
 import Scheduler, { SchedulerData, ViewTypes, CellUnits, AddMorePopover, DATE_FORMAT } from 'react-big-scheduler'
-import 'react-big-scheduler/lib/css/style.css'
 import moment from 'moment'
-import withDragDropContext from './components/withDnDContext'
-import "./ui/SchedulerJS.css";
-import { PropTypes } from 'prop-types'
 import Col from 'antd/lib/col'
 import Row from 'antd/lib/row'
 import Button from 'antd/lib/button'
-import { restElement } from "@babel/types";
+import withDragDropContext from './components/withDnDContext'
 import "./components/MendixUtils";
+
+import 'react-big-scheduler/lib/css/style.css'
+import "./ui/SchedulerJS.css";
 
 class SchedulerJS extends Component {
     constructor(props) {
@@ -33,56 +32,57 @@ class SchedulerJS extends Component {
     }
 
     componentDidMount() {
-                // date and time settings
+        // date and time settings
 
-                moment.locale('en', {
-                    week: {
-                        dow: 1,
-                        doy: 4
-                    }
-                });
-        
-                // create schedulerdata with settings
-        
-                let schedulerData = new SchedulerData(
-                    new moment(new Date()).format('YYYY-MM-DD'),
-                    ViewTypes.Week, false, false,
-                    {
-                        dayResourceTableWidth: '16%',
-                        weekResourceTableWidth: '16%',
-                        monthResourceTableWidth: '16%',
-                        customResourceTableWidth: '16%',
-                    
-                        dayCellWidth: '1.8%',
-                        weekCellWidth: '12%',
-                        monthCellWidth: '2.5%',
-                        customCellWidth: '6%',
-        
-                        dayMaxEvents: this.props.maxEvents,
-                        weekMaxEvents: this.props.maxEvents,
-                        monthMaxEvents: this.props.maxEvents,
-                        quarterMaxEvents: this.props.maxEvents,
-                        yearMaxEvents: this.props.maxEvents,
-                        customMaxEvents: this.props.maxEvents,
-        
-                        setMinuteStep: 30,
-                        schedulerWidth: '90%',
-                        nonAgendaDayCellHeaderFormat: 'HH:mm',
-                        views: [
-                            { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
-                            { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
-                            { viewName: 'Week', viewType: ViewTypes.Week, showAgenda: false, isEventPerspective: false },
-                            { viewName: '2 Weeks', viewType: ViewTypes.Custom1, showAgenda: false, isEventPerspective: false },
-                            { viewName: 'Month', viewType: ViewTypes.Month, showAgenda: false, isEventPerspective: false }
-                        ]
-                    },
-                    {
-                        getCustomDateFunc: this.getCustomDate,
-                        isNonWorkingTimeFunc: this.isNonWorkingTime,
-                        getDateLabelFunc: this.getDateLabel,
-                    },
-                    moment
-                );
+        moment.locale('en', {
+            week: {
+                dow: 1,
+                doy: 4
+            }
+        });
+
+        // create schedulerdata with settings
+
+        let schedulerData = new SchedulerData(
+            new moment(new Date()).format('YYYY-MM-DD'),
+            ViewTypes.Week, false, false,
+            {
+                dayResourceTableWidth: '16%',
+                weekResourceTableWidth: '16%',
+                monthResourceTableWidth: '16%',
+                customResourceTableWidth: '16%',
+
+                dayCellWidth: '2%',
+                weekCellWidth: '12%',
+                monthCellWidth: '5%',
+                customCellWidth: '6%',
+
+                dayMaxEvents: this.props.maxEvents,
+                weekMaxEvents: this.props.maxEvents,
+                monthMaxEvents: this.props.maxEvents,
+                quarterMaxEvents: this.props.maxEvents,
+                yearMaxEvents: this.props.maxEvents,
+                customMaxEvents: this.props.maxEvents,
+
+                setMinuteStep: this.props.minuteStep,
+                schedulerWidth: '90%',
+                schedulerMaxHeight: this.props.schedulerMaxHeight,
+                nonAgendaDayCellHeaderFormat: 'M/D|HH:mm',
+                views: [
+                    { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
+                    { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
+                    { viewName: 'Week', viewType: ViewTypes.Week, showAgenda: false, isEventPerspective: false },
+                    { viewName: '2 Weeks', viewType: ViewTypes.Custom1, showAgenda: false, isEventPerspective: false },
+                    { viewName: 'Month', viewType: ViewTypes.Month, showAgenda: false, isEventPerspective: false }
+                ]
+            },
+            {
+                getCustomDateFunc: this.getCustomDate,
+                isNonWorkingTimeFunc: this.isNonWorkingTime,
+                getDateLabelFunc: this.getDateLabel,
+            },
+            moment
+        );
 
         this.setResources(schedulerData);
         this.setTasks(schedulerData);
@@ -139,7 +139,7 @@ class SchedulerJS extends Component {
 
     render() {
         const { viewModel } = this.state;
-        if(viewModel != undefined){
+        if (viewModel != undefined) {
             let popover = <div />;
 
             if (this.state.headerItem !== undefined) {
@@ -197,8 +197,8 @@ class SchedulerJS extends Component {
                 </div>
             )
         }
-        else{
-            return(<div></div>);
+        else {
+            return (<div></div>);
         }
     }
 
@@ -253,9 +253,9 @@ class SchedulerJS extends Component {
             selectDate = date;
 
         let startDate = num === 0 ? selectDate :
-        schedulerData.localeMoment(selectDate).add(1 * num, 'days').format(DATE_FORMAT),
-        endDate = schedulerData.localeMoment(startDate).add(1, 'days').format(DATE_FORMAT),
-        cellUnit = CellUnits.Hour;
+            schedulerData.localeMoment(selectDate).add(1 * num, 'days').format(DATE_FORMAT),
+            endDate = schedulerData.localeMoment(startDate).add(1, 'days').format(DATE_FORMAT),
+            cellUnit = CellUnits.Hour;
         if (viewType === ViewTypes.Custom1) {
             let monday = schedulerData.localeMoment(selectDate).startOf('week').format(DATE_FORMAT);
             startDate = num === 0 ? monday : schedulerData.localeMoment(monday).add(1 * num, 'weeks').format(DATE_FORMAT);
@@ -279,18 +279,18 @@ class SchedulerJS extends Component {
         var start = schedulerData.localeMoment(startDate);
         var end = schedulerData.localeMoment(endDate);
         var dateLabel = start.format('MMM D, YYYY');
-    
+
         if (viewType === ViewTypes.Week || start != end && (viewType === ViewTypes.Custom1 || viewType === ViewTypes.Custom2)) {
             dateLabel = start.format('MMM D') + '-' + end.format('D, YYYY');
             if (start.month() !== end.month()) dateLabel = start.format('MMM D') + '-' + end.format('MMM D, YYYY');
             if (start.year() !== end.year()) dateLabel = start.format('MMM D, YYYY') + '-' + end.format('MMM D, YYYY');
         } else if (viewType === ViewTypes.Month) {
             dateLabel = start.format('MMMM YYYY');
-        } else if (viewType === ViewTypes.Custom){
+        } else if (viewType === ViewTypes.Custom) {
             dateLabel = start.format('dddd, MMM D') + ' - ' + end.format('dddd, MMM D');
         }
-        else{dateLabel = start.format('dddd, MMM D')}
-    
+        else { dateLabel = start.format('dddd, MMM D') }
+
         return dateLabel;
     };
 
@@ -474,11 +474,17 @@ class SchedulerJS extends Component {
 
     updateTask(event, startDate, endDate, oldSlotId, newSlotId) {
         const schedulerData = this.state.viewModel;
-        this.debug(event);
+        let minuteStep = this.props.minuteStep.value;
+        let momentStartDate = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+        let roundStartDate = Math.floor(momentStartDate.minute() / minuteStep) * minuteStep;
+        let roundedStartDate = momentStartDate.minute(roundStartDate).second(0).toDate();
+        let momentEndDate = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+        let roundEndDate = Math.floor(momentEndDate.minute() / minuteStep) * minuteStep;
+        let roundedEndDate = momentEndDate.minute(roundEndDate).second(0).toDate();
         getObject(event.id)
             .then((capacity) => {
-                capacity.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
-                capacity.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('StartDate', roundedStartDate);
+                capacity.set('EndDate', roundedEndDate);
                 capacity.set('ResourceID', newSlotId);
                 if (newSlotId.startsWith('r')) {
                     capacity.set('EmployeeNumber', newSlotId.substr(1))
@@ -488,15 +494,15 @@ class SchedulerJS extends Component {
                 }
                 this.debug('capacity: ' + capacity);
                 commitObject(capacity)
-                .then(() => {
-                    this.debug('Capacity committed');
-                    this.setState({
-                        viewModel: schedulerData
-                    });
-                })
-                .catch(error => {
-                    showMendixError('updateTask, commitObject', error);
-                })
+                    .then(() => {
+                        this.debug('Capacity committed');
+                        this.setState({
+                            viewModel: schedulerData
+                        });
+                    })
+                    .catch(error => {
+                        showMendixError('updateTask, commitObject', error);
+                    })
             })
             .catch(error => {
                 showMendixError('updateTask, getObject', error);
@@ -506,25 +512,23 @@ class SchedulerJS extends Component {
 
     prevClick = (schedulerData) => {
         schedulerData.prev();
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        this.setDateRange(schedulerData);
     }
 
     nextClick = (schedulerData) => {
         schedulerData.next();
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
+        this.setDateRange(schedulerData);
     }
 
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
         schedulerData.config.customCellWidth = view.viewType === ViewTypes.Custom ? '1%' : '6%';
-        this.setTasks(schedulerData);
+        this.setDateRange(schedulerData);
     }
 
     onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
-        this.setDateRange(schedulerData.startDate, schedulerData.endDate);
-        this.setTasks(schedulerData);
+        this.setDateRange(schedulerData);
     }
 
     eventClicked = (schedulerData, event) => {
@@ -540,7 +544,7 @@ class SchedulerJS extends Component {
                 microflow = this.props.taskClick;
             }
             this.props.clickedTask.setValue(event.id);
-                executeMicroflow(microflow);
+            executeMicroflow(microflow);
         }
         else {
             showWarning('You do not have permission to edit an operation.');
@@ -589,9 +593,11 @@ class SchedulerJS extends Component {
 
     // set the dates for the scheduler to load required data for those days
 
-    setDateRange(start, end) {
-        this.props.startDate.setValue((moment(start, 'YYYY-MM-DD').toDate()));
-        this.props.endDate.setValue((moment(end, 'YYYY-MM-DD').toDate()));
+    setDateRange(schedulerData) {
+        const {startDate, endDate} = schedulerData;
+        this.props.startDate.setValue((moment(startDate, 'YYYY-MM-DD').toDate()));
+        this.props.endDate.setValue((moment(endDate, 'YYYY-MM-DD').toDate()));
+        this.setTasks(schedulerData);
     }
 
     updateEventStart = (schedulerData, event, newStart) => {
@@ -698,7 +704,7 @@ class SchedulerJS extends Component {
         let currentDateTime = new moment();
         let hasConflict = false;
 
-        if(startMoment < currentDateTime){
+        if (startMoment < currentDateTime) {
             showWarning('No planning allowed in the past.');
             hasConflict = true;
         }
@@ -738,7 +744,7 @@ class SchedulerJS extends Component {
         if (slotId.startsWith('r')) {
             if (this.props.editPermission.value === true) {
                 if (this.checkConflictOccurred(schedulerData, {}, start, end, slotId) === false) {
-                    askConfirmation(`Do you want to add a ${this.props.vacationTitle} for ${slotName}`)
+                    askConfirmation(`Do you want to add an unavailability for ${slotName}`)
                         .then((proceed) => {
                             if (proceed) {
                                 createObject('PMScheduler.Capacity')
@@ -753,21 +759,21 @@ class SchedulerJS extends Component {
                                         mxObject.set('Movable', false);
                                         mxObject.set('IsVacation', true);
                                         mxObject.set('ResourceID', slotId);
-                                        let newEvent = {
-                                            id: mxObject.getGuid(),
-                                            title: this.props.vacationTitle,
-                                            start: moment(start, 'YYYY-MM-DD HH:mm:ss').toDate(),
-                                            end: moment(end, 'YYYY-MM-DD HH:mm:ss').toDate(),
-                                            resourceId: slotId,
-                                            bgColor: 'black',
-                                            resizable: true,
-                                            movable: true,
-                                            startResizable: true,
-                                            endResizable: true,
-                                         };
+                                        // let newEvent = {
+                                        //     id: mxObject.getGuid(),
+                                        //     title: this.props.vacationTitle,
+                                        //     start: moment(start, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                        //     end: moment(end, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                        //     resourceId: slotId,
+                                        //     bgColor: 'black',
+                                        //     resizable: true,
+                                        //     movable: true,
+                                        //     startResizable: true,
+                                        //     endResizable: true,
+                                        // };
                                         commitObject(mxObject)
                                             .then(() => {
-                                                schedulerData.addEvent(newEvent);
+                                                // schedulerData.addEvent(newEvent);
                                                 this.setState({
                                                     viewModel: schedulerData
                                                 });
@@ -787,6 +793,10 @@ class SchedulerJS extends Component {
                 showWarning(`You are not allowed to create a ${this.props.vacationTitle}.`);
             }
         }
+    }
+
+    roundDate = (date, duration, method) => {
+        return moment(Math[method]((+date) / (+duration)) * (+duration));
     }
 
     debug = (...args) => {
