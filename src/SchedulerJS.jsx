@@ -255,10 +255,8 @@ class SchedulerJS extends Component {
     handleSearch = (userInput) => {
         let schedulerData = this.state.viewModel;
         let event = this.state.tasks.find(function(task) { return task.operationID === userInput });
-        schedulerData.viewType = ViewTypes.Day;
-        schedulerData.cellUnit = CellUnits.Hour;
-        schedulerData._createHeaders();
-
+        // schedulerData.viewType = ViewTypes.Day;
+        // schedulerData.cellUnit = CellUnits.Hour;
 
         this.eventClicked(schedulerData, event);
 
