@@ -92,6 +92,34 @@ getObject = (guid) => {
 }
 
 /**
+ * Get a multiple Mendix Objects
+ *
+ * @name getObjects
+ * @param guids Array of Object guids of the Mendix Objects that you try to return
+ */
+getObjects = (guids) => {
+    return new Promise((resolve, reject) => {
+        window.mx.data.get({ guids: guids, callback: resolve, error: reject });
+    });
+}
+
+
+
+/**
+ * Commit multiple Mendix Objects
+ *
+ * @name commitObjects
+ * @param mxObjects multiple Mendix Objects that will be committed to the server
+ */
+commitObjects = (mxObjects) => {
+    return new Promise((resolve, reject) => {
+        window.mx.data.commit({ mxobjs: mxObjects, callback: resolve, error: reject });
+    });
+}
+
+
+
+/**
  * Commit a Mendix Object
  *
  * @name commitObject

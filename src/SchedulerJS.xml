@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<widget id="com.sibelco.widget.custom.schedulerjs.SchedulerJS" pluginWidget="true" needsEntityContext="true" offlineCapable="false"
+<widget id="sibelco.schedulerjs.SchedulerJS" pluginWidget="true" needsEntityContext="true" offlineCapable="false"
         supportedPlatform="Web"
         xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
@@ -16,39 +16,15 @@
                 <caption>Tasks</caption>
                 <description>Enter the name of the microflow which retrieves the tasks.</description>
             </property>
-            <property key="startDate" type="attribute">
-                <caption>Start date</caption>
-                <description/>
-                <attributeTypes>
-                    <attributeType name="DateTime"/>
-                </attributeTypes>
-            </property>
-            <property key="endDate" type="attribute">
-                <caption>End date</caption>
-                <description/>
-                <attributeTypes>
-                    <attributeType name="DateTime"/>
-                </attributeTypes>
-            </property>
+            <!-- <property key="taskSourceSap" type="string" required="true">
+                <caption>Tasks from SAP</caption>
+                <description>Enter the name of the microflow to load tasks from SAP.</description>
+            </property> -->
             <property key="planningArea" type="attribute">
                 <caption>Planning area</caption>
                 <description/>
                 <attributeTypes>
                     <attributeType name="String"/>
-                </attributeTypes>
-            </property>
-            <property key="clickedTask" type="attribute">
-                <caption>Event id (Task)</caption>
-                <description/>
-                <attributeTypes>
-                    <attributeType name="String"/>
-                </attributeTypes>
-            </property>
-            <property key="editPermission" type="attribute">
-                <caption>Boolean Edit permission</caption>
-                <description/>
-                <attributeTypes>
-                    <attributeType name="Boolean"/>
                 </attributeTypes>
             </property>
             <property key="schedulerMaxHeight" type="integer" defaultValue="0">
@@ -90,6 +66,13 @@
                     <attributeType name="Boolean"/>
                 </attributeTypes>
             </property>
+            <property key="editPermission" type="attribute">
+                <caption>Boolean Edit permission</caption>
+                <description/>
+                <attributeTypes>
+                    <attributeType name="Boolean"/>
+                </attributeTypes>
+            </property>            
             <property key="minuteStep" type="attribute">
                 <caption>Minute Step</caption>
                 <description>15 or 30 minute view</description>
@@ -97,19 +80,50 @@
                     <attributeType name="Integer"/>
                 </attributeTypes>
             </property>
-            <property key="taskClick" type="string" required="true">
-                <caption>Clicked task</caption>
-                <description>microflow to execute when an event (Task) is clicked</description>
-            </property>
-            <property key="vacationClick" type="string" required="true">
-                <caption>Clicked vacation</caption>
-                <description>microflow to execute when an event (Vacation) is clicked</description>
-            </property>
+
             <property key="vacationTitle" type="string" required="true" defaultValue="Vacation">
                 <caption>Vacation task title</caption>
                 <description />
             </property>
+            <property key="overlapMessage" type="string" required="true">
+                <caption>Overlap message</caption>
+                <description/>
+            </property>
+
         </propertyGroup>
+
+        <propertyGroup caption="Events">
+            <property key="taskClick" type="string" required="true">
+                <caption>Clicked task</caption>
+                <description>microflow to execute when an event (Task) is clicked</description>
+            </property>
+        </propertyGroup>
+
+        <!-- If we wanne set amount of events per view -->
+        
+        <!-- <propertyGroup caption="Max Events">
+            <property key="dayMaxEvents" type="integer" defaultValue="5">
+                <caption>Maximum events</caption>
+                <description>Maximum events shown in day view</description>
+            </property>
+             <property key="twoDayMaxEvents" type="integer" defaultValue="5">
+                <caption>Maximum events</caption>
+                <description>Maximum events shown in 2-day view</description>
+            </property>
+           <property key="weekMaxEvents" type="integer" defaultValue="5">
+                <caption>Maximum events</caption>
+                <description>Maximum events shown in week view</description>
+            </property>
+            <property key="twoWeekMaxEvents" type="integer" defaultValue="5">
+                <caption>Maximum events</caption>
+                <description>Maximum events shown in 2-week view</description>
+            </property>
+            <property key="monthMaxEvents" type="integer" defaultValue="5">
+                <caption>Maximum events</caption>
+                <description>Maximum events shown in month view</description>
+            </property> 
+        </propertyGroup>-->
+
     </properties>
 
 </widget>

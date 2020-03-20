@@ -1,33 +1,57 @@
 import { Component, createElement } from "react";
 import Scheduler, { SchedulerData, ViewTypes, CellUnits, AddMorePopover, DATE_FORMAT } from 'react-big-scheduler'
+import 'react-big-scheduler/lib/css/style.css'
 import moment from 'moment'
+import withDragDropContext from './components/withDnDContext'
+import "./ui/SchedulerJS.css";
+import { PropTypes, array } from 'prop-types'
 import Col from 'antd/lib/col'
 import Row from 'antd/lib/row'
 import Button from 'antd/lib/button'
-import withDragDropContext from './components/withDnDContext'
+import { restElement } from "@babel/types";
 import "./components/MendixUtils";
+import { SearchField } from './components/SearchField';
+import "./ui/SearchField.css";
 
-import 'react-big-scheduler/lib/css/style.css'
-import "./ui/SchedulerJS.css";
+
+// Do not forget to copy 'the react-big-scheduler/lib' folder over the original folder
+
+
+// Changes that need to be done in node_modules/react-big-scheduler/lib files
+
+// schedulerData.JS
+// boolean that we sit in setResources depending the id (w of u)
+// 752: isUnplan: slot.isUnplan
+
+// config.JS
+// color we pass for the unplanned section. this is only a default, the scheduler accepts it as a setting
+// 60: unplannedSlotColor: 'F0FFF0',
+
+// bodyview
+// coloring the cells in the body of the unplanned section (not the resource tab)
+// 56: if (item.isUnplan && !header.nonWorkingTime) style = _extends({}, style, { backgroundColor: config.unplannedSlotColor });
+
+// resourceView
+// coloring the cells in the resource tab of the unplanned section
+// 105: var tdStyle = { height: item.rowHeight, backgroundColor: item.isUnplan ? config.unplannedSlotColor : '' };
+// 108: backgroundColor: item.isUnplan ? schedulerData.config.unplannedSlotColor : schedulerData.config.groupOnlySlotColor
+
 
 class SchedulerJS extends Component {
     constructor(props) {
         super(props);
 
-        console.log('Constructor called');
-
-
-
         this.state = {
             viewModel: undefined,
-            resources: [],
-            tasks: [],
+            resources: undefined,
+            tasks: undefined,
             headerItem: undefined,
             left: 0,
             top: 0,
             height: 0,
             resourcesLoading: false,
             tasksLoading: false,
+            clickedOrder: undefined,
         };
     }
 
@@ -47,11 +71,12 @@ class SchedulerJS extends Component {
             new moment(new Date()).format('YYYY-MM-DD'),
             ViewTypes.Week, false, false,
             {
+                unplannedSlotColor: '#DDDDDD',
                 dayResourceTableWidth: '16%',
                 weekResourceTableWidth: '16%',
                 monthResourceTableWidth: '16%',
                 customResourceTableWidth: '16%',
-
+            
                 dayCellWidth: '2%',
                 weekCellWidth: '12%',
                 monthCellWidth: '5%',
@@ -66,7 +91,7 @@ class SchedulerJS extends Component {
 
                 setMinuteStep: this.props.minuteStep,
                 schedulerWidth: '90%',
-                schedulerMaxHeight: this.props.schedulerMaxHeight,
+                schedulerMaxHeight: this.props.schedulerMaxHeight !== 0 ? this.props.schedulerMaxHeight : 650,
                 nonAgendaDayCellHeaderFormat: 'M/D|HH:mm',
                 views: [
                     { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
@@ -88,48 +113,52 @@ class SchedulerJS extends Component {
         this.setTasks(schedulerData);
     }
 
+    shouldComponentUpdate(nextProps, nextState){
+        let needUpdate = true;
+        if(this.props !== nextProps){
+            if(
+                this.props.planningArea.status !== 'available'
+                || this.props.editPermission.status !== 'available'
+                || this.props.workStartTime.status !== 'available'
+                || this.props.workEndTime.status !== 'available'
+                || this.props.showWeekend.status !== 'available'
+                || this.props.allowOutsideHoursPlanning.status !== 'available'
+                || this.props.minuteStep.status !== 'available'
+                ){
+                    needUpdate = false;
+            }
+        }
+        
+        if(this.state.tasks !== nextState.tasks){
+            needUpdate = true;
+        }
+
+        if(this.props.planningArea.value !== nextProps.planningArea.value){
+            this.setState({
+                tasks: undefined
+            })
+            needUpdate = true;
+        }
+
+        console.log(this.props.planningArea.value + ' - ' + nextProps.planningArea.value + ' + ' + needUpdate);
+        return needUpdate;
+    }
+
     componentDidUpdate(prevProps) {
+
         if (prevProps !== this.props) {
 
             let schedulerData = this.state.viewModel;
 
-            let needStateSet = false;
-            let needResourcesSet = false;
-            let needTasksSet = false;
-
             // check if planningarea has changed
 
-            if (prevProps.planningArea.value !== this.props.planningArea.value) {
-                needResourcesSet = true;
-                needTasksSet = true;
-                needStateSet = true;
-            }
-
-            // check if startDate or endDate is changed
-
-            if (prevProps.startDate.value !== this.props.startDate.value || prevProps.endDate.value !== this.props.endDate.value) {
-                needTasksSet = true;
-                needStateSet = true;
-            }
-
-            // check if a task has been handled by the clickevent, and changes are made in the mendix database
-
-            if (prevProps.clickedTask !== this.props.clickedTask && this.props.clickedTask === ' ') {
-                needTasksSet = true;
-                needStateSet = true;
-            }
-
-            // check if something needs to be reloaded and if the state needs to be updated
-
-            if (needResourcesSet === true) {
+            if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined) {
+                this.setState({
+                    tasks: undefined,
+                    resources: undefined
+                });
                 this.setResources(schedulerData);
-            }
-
-            if (needTasksSet === true) {
                 this.setTasks(schedulerData);
-            }
-
-            if (needStateSet === true) {
                 this.setState({
                     viewModel: schedulerData
                 });
@@ -138,8 +167,24 @@ class SchedulerJS extends Component {
     }
 
     render() {
-        const { viewModel } = this.state;
-        if (viewModel != undefined) {
+        const { viewModel, tasks } = this.state;
+        let searchField = <div />;
+        if(tasks !== undefined){
+            let suggestions = [];
+            let map = new Map();
+            for(let item of tasks) {
+                if(!map.has(item.operationID)){
+                    map.set(item.operationID, true);
+                    suggestions.push(item.operationID);
+                }
+            }
+
+            searchField = <SearchField 
+            suggestions={suggestions}
+            handleSearch={this.handleSearch}
+        />
+        }
+        if(viewModel != undefined){
             let popover = <div />;
 
             if (this.state.headerItem !== undefined) {
@@ -173,6 +218,7 @@ class SchedulerJS extends Component {
 
             return (
                 <div>
+                    {searchField}
                     <Scheduler schedulerData={viewModel}
                         prevClick={this.prevClick}
                         nextClick={this.nextClick}
@@ -188,18 +234,36 @@ class SchedulerJS extends Component {
                         onScrollTop={this.onScrollTop}
                         onScrollBottom={this.onScrollBottom}
                         nonAgendaCellHeaderTemplateResolver={this.nonAgendaCellHeaderTemplateResolver}
-                        conflictOccurred={this.conflictOccurred}
+                        checkConflictOccurred={this.checkConflictOccurred}
                         onSetAddMoreState={this.onSetAddMoreState}
                         toggleExpandFunc={this.toggleExpandFunc}
                         newEvent={this.newEvent}
+                        updateMultiple={this.updateMultiple}
+                        findEvents={this.findEvents}
+                        checkMultipleValid={this.checkMultipleValid}
+                        checkIfEventIsValid={this.checkIfEventIsValid}
                     />
                     {popover}
                 </div>
             )
         }
-        else {
-            return (<div></div>);
+        else{
+            return(<div></div>);
         }
+    }
+
+    handleSearch = (userInput) => {
+        let schedulerData = this.state.viewModel;
+        let event = this.state.tasks.find(function(task) { return task.operationID === userInput });
+        schedulerData.viewType = ViewTypes.Day;
+        schedulerData.cellUnit = CellUnits.Hour;
+        schedulerData._createHeaders();
+
+
+        this.eventClicked(schedulerData, event);
+
+        this.onSelectDate(schedulerData, event.start);
+
     }
 
     onSetAddMoreState = (newState) => {
@@ -253,9 +317,9 @@ class SchedulerJS extends Component {
             selectDate = date;
 
         let startDate = num === 0 ? selectDate :
-            schedulerData.localeMoment(selectDate).add(1 * num, 'days').format(DATE_FORMAT),
-            endDate = schedulerData.localeMoment(startDate).add(1, 'days').format(DATE_FORMAT),
-            cellUnit = CellUnits.Hour;
+        schedulerData.localeMoment(selectDate).add(1 * num, 'days').format(DATE_FORMAT),
+        endDate = schedulerData.localeMoment(startDate).add(1, 'days').format(DATE_FORMAT),
+        cellUnit = CellUnits.Hour;
         if (viewType === ViewTypes.Custom1) {
             let monday = schedulerData.localeMoment(selectDate).startOf('week').format(DATE_FORMAT);
             startDate = num === 0 ? monday : schedulerData.localeMoment(monday).add(1 * num, 'weeks').format(DATE_FORMAT);
@@ -279,18 +343,18 @@ class SchedulerJS extends Component {
         var start = schedulerData.localeMoment(startDate);
         var end = schedulerData.localeMoment(endDate);
         var dateLabel = start.format('MMM D, YYYY');
-
+    
         if (viewType === ViewTypes.Week || start != end && (viewType === ViewTypes.Custom1 || viewType === ViewTypes.Custom2)) {
             dateLabel = start.format('MMM D') + '-' + end.format('D, YYYY');
             if (start.month() !== end.month()) dateLabel = start.format('MMM D') + '-' + end.format('MMM D, YYYY');
             if (start.year() !== end.year()) dateLabel = start.format('MMM D, YYYY') + '-' + end.format('MMM D, YYYY');
         } else if (viewType === ViewTypes.Month) {
             dateLabel = start.format('MMMM YYYY');
-        } else if (viewType === ViewTypes.Custom) {
+        } else if (viewType === ViewTypes.Custom){
             dateLabel = start.format('dddd, MMM D') + ' - ' + end.format('dddd, MMM D');
         }
-        else { dateLabel = start.format('dddd, MMM D') }
-
+        else{dateLabel = start.format('dddd, MMM D')}
+    
         return dateLabel;
     };
 
@@ -405,13 +469,17 @@ class SchedulerJS extends Component {
                 .then((mxObjects) => {
                     var resources = [];
                     this.debug("Received resources", mxObjects.length);
-                    mxObjects.forEach(resource =>
+                    mxObjects.forEach(resource =>{
                         resources.push({
                             id: resource.get("ResourceID"),
                             name: resource.get("Name"),
                             groupOnly: resource.get("GroupOnly"),
-                            parentId: resource.get("ParentID")
-                        })
+                            parentId: resource.get("ParentID"),
+                            isUnplan: resource.get("ResourceID").startsWith("u") ? true : false,
+                        });
+                        console.log('Deze: ' + resource.get("ResourceID").startsWith("u"));
+
+                    }
                     );
                     schedulerData.setResources(resources);
                     this.setState({
@@ -427,82 +495,85 @@ class SchedulerJS extends Component {
     }
 
     setTasks = (schedulerData) => {
-        let tasksLoading = this.state.tasksLoading;
-        if (tasksLoading === false) {
-            let progressId = showProgress("Loading operations...", true);
-            this.setState({
-                tasksLoading: true
-            });
-            executeMicroflow(this.props.taskSource)
-                .then((mxObjects) => {
-                    var tasks = [];
-                    this.debug("Received tasks", mxObjects.length);
-                    this.debug('Tasks: ', mxObjects);
-                    mxObjects.forEach(task =>
-                        tasks.push({
-                            id: task.getGuid(),
-                            title: task.get("Title"),
-                            description: task.get('Description'),
-                            start: task.get("StartDate"),
-                            end: task.get("EndDate"),
-                            bgColor: task.get("BgColor"),
-                            showPopover: task.get("ShowTooltip"),
-                            resizable: task.get("Resizable"),
-                            startResizable: task.get("StartResizable"),
-                            endResizable: task.get("EndResizable"),
-                            movable: task.get("Movable"),
-                            resourceId: task.get("ResourceID"),
-                            isVacation: task.get("IsVacation"),
-                            orderNumber: task.get("OrderNumber"),
-                            employeeNumber: task.get("EmployeeNumber"),
-                        })
-                    );
-                    schedulerData.setEvents(tasks);
-                    this.setState({
-                        viewModel: schedulerData,
-                        tasks: tasks,
-                        tasksLoading: false
-                    });
-                    hideProgress(progressId);
-                })
-                .then()
-                .catch(error => {
-                    showMendixError(`setTasks`, error);
+        if(this.state.tasks === undefined){
+            let tasksLoading = this.state.tasksLoading;
+            if (tasksLoading === false) {
+                let progressId = showProgress("Loading operations...", true);
+                this.setState({
+                    tasksLoading: true
                 });
+            // executeMicroflow(this.props.taskSourceSap)
+            // .then(() => {
+                executeMicroflow(this.props.taskSource)
+                    .then((mxObjects) => {
+                        var tasks = [];
+                        this.debug("Received tasks", mxObjects.length);
+                        mxObjects.forEach(task =>
+                            tasks.push({
+                                id: task.getGuid(),
+                                title: task.get("Title"),
+                                description: task.get('Description'),
+                                start: task.get("StartDate"),
+                                end: task.get("EndDate"),
+                                bgColor: task.get("BgColor"),
+                                showPopover: task.get("ShowTooltip"),
+                                resizable: task.get("Resizable"),
+                                startResizable: task.get("StartResizable"),
+                                endResizable: task.get("EndResizable"),
+                                movable: task.get("Movable"),
+                                resourceId: task.get("ResourceID"),
+                                isVacation: task.get("IsVacation"),
+                                orderNumber: task.get("OrderNumber"),
+                                employeeNumber: task.get("EmployeeNumber"),
+                                operationID: task.get("OperationID"),
+                            })
+                        );
+                        schedulerData.setEvents(tasks);
+                        this.setState({
+                            viewModel: schedulerData,
+                            tasks: tasks,
+                            tasksLoading: false
+                        });
+                        hideProgress(progressId);
+                    })
+                    .then()
+                    .catch(error => {
+                        showMendixError(`setTasks`, error);
+                    });
+                // })
+            }
+        }
+        else{
+            schedulerData.setEvents(this.state.tasks);
+            this.setState({
+                viewModel: schedulerData,
+            });
         }
     }
 
     updateTask(event, startDate, endDate, oldSlotId, newSlotId) {
         const schedulerData = this.state.viewModel;
-        let minuteStep = this.props.minuteStep.value;
-        let momentStartDate = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
-        let roundStartDate = Math.floor(momentStartDate.minute() / minuteStep) * minuteStep;
-        let roundedStartDate = momentStartDate.minute(roundStartDate).second(0).toDate();
-        let momentEndDate = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
-        let roundEndDate = Math.floor(momentEndDate.minute() / minuteStep) * minuteStep;
-        let roundedEndDate = momentEndDate.minute(roundEndDate).second(0).toDate();
         getObject(event.id)
             .then((capacity) => {
-                capacity.set('StartDate', roundedStartDate);
-                capacity.set('EndDate', roundedEndDate);
+                capacity.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
                 capacity.set('ResourceID', newSlotId);
+                capacity.set('IsChanged', true)
                 if (newSlotId.startsWith('r')) {
                     capacity.set('EmployeeNumber', newSlotId.substr(1))
                 }
                 else {
                     capacity.set('EmployeeNumber', '')
                 }
-                this.debug('capacity: ' + capacity);
                 commitObject(capacity)
-                    .then(() => {
-                        this.debug('Capacity committed');
-                        this.setState({
-                            viewModel: schedulerData
-                        });
-                    })
-                    .catch(error => {
-                        showMendixError('updateTask, commitObject', error);
-                    })
+                .then(() => {
+                    this.setState({
+                        viewModel: schedulerData
+                    });
+                })
+                .catch(error => {
+                    showMendixError('updateTask, commitObject', error);
+                })
             })
             .catch(error => {
                 showMendixError('updateTask, getObject', error);
@@ -512,39 +583,35 @@ class SchedulerJS extends Component {
 
     prevClick = (schedulerData) => {
         schedulerData.prev();
-        this.setDateRange(schedulerData);
+        this.setTasks(schedulerData);
     }
 
     nextClick = (schedulerData) => {
         schedulerData.next();
-        this.setDateRange(schedulerData);
+        this.setTasks(schedulerData);
     }
 
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
         schedulerData.config.customCellWidth = view.viewType === ViewTypes.Custom ? '1%' : '6%';
-        this.setDateRange(schedulerData);
+        this.setTasks(schedulerData);
     }
 
     onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
-        this.setDateRange(schedulerData);
+        this.setTasks(schedulerData);
     }
 
     eventClicked = (schedulerData, event) => {
-        if (this.props.editPermission.value === true) {
-            let title = new String;
-            let microflow = new String();
-            if (event.title === this.props.vacationTitle) {
-                title = this.props.vacationTitle;
-                microflow = this.props.vacationClick;
-            }
-            else {
-                title = 'Task';
-                microflow = this.props.taskClick;
-            }
-            this.props.clickedTask.setValue(event.id);
-            executeMicroflow(microflow);
+        if (this.props.editPermission.value) {
+            getObject(event.id)
+            .then((obj) => {
+                obj.set('UnderEdit', true)
+                commitObject(obj)
+                .then(() => {
+                    executeMicroflow(this.props.taskClick);
+                });
+            });
         }
         else {
             showWarning('You do not have permission to edit an operation.');
@@ -591,44 +658,6 @@ class SchedulerJS extends Component {
         }
     };
 
-    // set the dates for the scheduler to load required data for those days
-
-    setDateRange(schedulerData) {
-        const {startDate, endDate} = schedulerData;
-        this.props.startDate.setValue((moment(startDate, 'YYYY-MM-DD').toDate()));
-        this.props.endDate.setValue((moment(endDate, 'YYYY-MM-DD').toDate()));
-        this.setTasks(schedulerData);
-    }
-
-    updateEventStart = (schedulerData, event, newStart) => {
-        let newEvent = {
-            id: event.id,
-            start: newStart
-        };
-        if (this.checkIfStartEventIsValid(schedulerData, newEvent) === true) {
-            if (this.checkConflictOccurred(schedulerData, event, newStart, event.end, event.resourceId) === false) {
-                schedulerData.updateEventStart(event, newStart);
-                this.updateTask(event, schedulerData.localeMoment(newStart), schedulerData.localeMoment(event.end), event.resourceId, event.resourceId);
-            }
-        }
-        else {
-            showWarning('Not allowed to plan outside working hours.');
-        }
-        this.setState({
-            viewModel: schedulerData
-        })
-    }
-
-    updateEventEnd = (schedulerData, event, newEnd) => {
-        if (this.checkConflictOccurred(schedulerData, event, event.start, newEnd, event.resourceId) === false) {
-            schedulerData.updateEventEnd(event, newEnd);
-            this.updateTask(event, schedulerData.localeMoment(event.start), schedulerData.localeMoment(newEnd), event.resourceId, event.resourceId);
-        }
-        this.setState({
-            viewModel: schedulerData
-        })
-    }
-
     // function to check if the startTime of an event is allowed, returns a boolean
 
     checkIfStartEventIsValid(schedulerData, event) {
@@ -654,27 +683,27 @@ class SchedulerJS extends Component {
         }
     }
 
-    moveEvent = (schedulerData, event, slotId, slotName, start, end) => {
-        let newEvent = {
-            id: event.id,
-            start: start
-        };
-        if (this.checkIfStartEventIsValid(schedulerData, newEvent) === true) {
-            if (this.checkConflictOccurred(schedulerData, event, start, end, slotId) === false) {
-                schedulerData.moveEvent(event, slotId, slotName, start, end);
-                this.updateTask(event, start, end, event.resourceId, slotId);
-                this.setState({
-                    viewModel: schedulerData
-                });
-            }
-            else {
-                this.setState({
-                    viewModel: schedulerData
-                });
-            }
+    checkIfEventIsValid(schedulerData, event) {
+        const { localeMoment } = schedulerData;
+        let dayOfWeek = localeMoment(event.start).weekday();
+        let startHour = localeMoment(event.start).hour();
+        let endHour = localeMoment(event.end).hour();
+        let allowedStartHour = localeMoment(this.props.workStartTime.value).hour();
+        let allowedEndHour = localeMoment(this.props.workEndTime.value).hour();
+        if (this.props.allowOutsideHoursPlanning.value === true) {
+            return true;
         }
         else {
-            showWarning('Not allowed to plan outside working hours.');
+
+            if (this.props.showWeekend.value === true && startHour >= allowedStartHour && startHour <= allowedEndHour && endHour >= allowedStartHour && endHour <= allowedEndHour) {
+                return true;
+            }
+            else if (dayOfWeek >= 0 && dayOfWeek <= 4 && startHour >= allowedStartHour && startHour <= allowedEndHour && endHour >= allowedStartHour && endHour <= allowedEndHour) {
+                return true
+            }
+            else {
+                return false;
+            }
         }
     }
 
@@ -701,13 +730,7 @@ class SchedulerJS extends Component {
 
         let startMoment = localeMoment(start)
         let endMoment = localeMoment(end);
-        let currentDateTime = new moment();
         let hasConflict = false;
-
-        if (startMoment < currentDateTime) {
-            showWarning('No planning allowed in the past.');
-            hasConflict = true;
-        }
 
         if (!slotId.startsWith('u')) {
             let events = this.state.tasks.map(function (res) {
@@ -729,7 +752,6 @@ class SchedulerJS extends Component {
                     if (event.resourceId === slotId) {
                         if (startMoment < eEnd && endMoment > eStart) {
                             hasConflict = true;
-                            showWarning('This situation leeds to overlapping.')
                         }
                     }
                 }
@@ -744,7 +766,7 @@ class SchedulerJS extends Component {
         if (slotId.startsWith('r')) {
             if (this.props.editPermission.value === true) {
                 if (this.checkConflictOccurred(schedulerData, {}, start, end, slotId) === false) {
-                    askConfirmation(`Do you want to add an unavailability for ${slotName}`)
+                    askConfirmation(`Do you want to add a ${this.props.vacationTitle} for ${slotName}`)
                         .then((proceed) => {
                             if (proceed) {
                                 createObject('PMScheduler.Capacity')
@@ -759,21 +781,21 @@ class SchedulerJS extends Component {
                                         mxObject.set('Movable', false);
                                         mxObject.set('IsVacation', true);
                                         mxObject.set('ResourceID', slotId);
-                                        // let newEvent = {
-                                        //     id: mxObject.getGuid(),
-                                        //     title: this.props.vacationTitle,
-                                        //     start: moment(start, 'YYYY-MM-DD HH:mm:ss').toDate(),
-                                        //     end: moment(end, 'YYYY-MM-DD HH:mm:ss').toDate(),
-                                        //     resourceId: slotId,
-                                        //     bgColor: 'black',
-                                        //     resizable: true,
-                                        //     movable: true,
-                                        //     startResizable: true,
-                                        //     endResizable: true,
-                                        // };
+                                        let newEvent = {
+                                            id: mxObject.getGuid(),
+                                            title: this.props.vacationTitle,
+                                            start: moment(start, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                            end: moment(end, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                            resourceId: slotId,
+                                            bgColor: 'black',
+                                            resizable: true,
+                                            movable: true,
+                                            startResizable: true,
+                                            endResizable: true,
+                                         };
                                         commitObject(mxObject)
                                             .then(() => {
-                                                // schedulerData.addEvent(newEvent);
+                                                schedulerData.addEvent(newEvent);
                                                 this.setState({
                                                     viewModel: schedulerData
                                                 });
@@ -795,8 +817,184 @@ class SchedulerJS extends Component {
         }
     }
 
-    roundDate = (date, duration, method) => {
-        return moment(Math[method]((+date) / (+duration)) * (+duration));
+    findEvents = (event) => {
+        console.log('find events');
+        console.log('operationID: ' + event.operationID);
+        const tasks = this.state.tasks;
+        let result = [];
+        tasks.map(function (task) {
+            if(task.operationID === event.operationID){
+                    result.push(task);
+            }
+        });
+        return result;
+    }
+
+    checkMultipleValid = (schedulerData, events, start, end) => {
+        console.log('check multiple valid');
+        let valid = true;
+        events.forEach((event) => {
+            if(this.checkConflictOccurred(schedulerData, event, start, end, event.newSlotId !== undefined ? event.newSlotId : event.resourceId)){
+                valid = false;
+            }
+        });
+        return valid;
+    }
+
+    updateMultiple = (schedulerData, events, startDate, endDate) => {
+        let guids = events.map((event => {
+            return event.id
+        }));
+        getObjects(guids)
+        .then((capacities) => {
+            let commitList = [];
+            capacities.forEach((capacity) => {
+                capacity.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('IsChanged', true);
+                let thisEvent = events.find(x => x.id === capacity.getGuid());
+                let newResourceId = thisEvent.resourceId;
+                console.log('event: ' + JSON.stringify(thisEvent));
+                console.log('ResourceId: ' + newResourceId);
+                capacity.set('ResourceID', newResourceId);
+                if (newResourceId.startsWith('r')) {
+                    capacity.set('EmployeeNumber', newResourceId.substr(1))
+                }
+                else {
+                    capacity.set('EmployeeNumber', '')
+                }
+                commitList.push(capacity);
+            })
+            
+            commitObjects(commitList)
+            .then(() => {
+                events.forEach((event) => {
+                    schedulerData.moveEvent(event, event.resourceId, event.slotName, startDate, endDate);
+                });
+                this.setState({
+                    viewModel: schedulerData
+                });
+            })
+            .catch(error => {
+                showMendixError('updateMultiple, commitObjects', error);
+            })
+        })
+        .catch(error => {
+            showMendixError('updateMultiple, getObjects', error);
+        });
+    }
+
+    moveEvent = (schedulerData, event, slotId, slotName, start, end) => {
+        const { localeMoment } = schedulerData;
+
+        let startMoment = localeMoment(start)
+        let currentDateTime = new moment();
+        console.log(startMoment + ' < ' + currentDateTime);
+        if(!(startMoment < currentDateTime)){
+            let events = this.findEvents(event);
+            let eventTocheck = {
+                id: event.id,
+                start: start,
+                end: end
+            };
+            if(this.checkIfEventIsValid(schedulerData, eventTocheck)){
+                if(!this.checkConflictOccurred(schedulerData, event, start, end, slotId)){
+                    let currentEvent = events.find(x => x.id === event.id);
+                    currentEvent.resourceId = slotId;
+                    if(this.checkMultipleValid(schedulerData, events, start, end)){
+                        this.updateMultiple(schedulerData, events, start, end);
+                    }
+                    else{
+                        showWarning(this.props.overlapMessage + '\n' + event.title);
+                        this.setState({
+                            viewModel: schedulerData
+                        });
+                    }
+                }
+                else{
+                    showWarning(this.props.overlapMessage + '\n' + event.title);
+                    this.setState({
+                        viewModel: schedulerData
+                    });
+                }
+            }
+            else{
+                showWarning('Not allowed to plan outside working hours.');
+                this.setState({
+                    viewModel: schedulerData
+                })
+            }
+        }
+        else {
+            showWarning('No planning allowed in the past.');
+            this.setState({
+                viewModel: schedulerData
+            })
+        }
+    }
+
+    updateEventStart = (schedulerData, event, newStart) => {
+        const { localeMoment } = schedulerData;
+
+        let startMoment = localeMoment(start)
+        let currentDateTime = new moment();
+        if(!startMoment < currentDateTime){
+            let newEvent = {
+                id: event.id,
+                start: newStart,
+                end: event.end
+            };
+            let events = this.findEvents(event);
+            if (this.checkIfEventIsValid(schedulerData, newEvent)) {
+                if(this.checkMultipleValid(schedulerData, events, newStart, event.end)){
+                    this.updateMultiple(schedulerData, events, newStart, event.end);
+                }
+                else{
+                    showWarning(this.props.overlapMessage + '\n' + event.title);
+                }
+            }
+            else {
+                showWarning('Not allowed to plan outside working hours.');
+            }
+            this.setState({
+                viewModel: schedulerData
+            })
+        }
+        else {
+            showWarning('No planning allowed in the past.');
+        }
+    }
+
+    updateEventEnd = (schedulerData, event, newEnd) => {
+        const { localeMoment } = schedulerData;
+
+        let startMoment = localeMoment(start)
+        let currentDateTime = new moment();
+        if(!startMoment < currentDateTime){
+            let newEvent = {
+                id: event.id,
+                start: event.start,
+                end: newEnd
+            };
+            let events = this.findEvents(event);
+            if (this.checkIfEventIsValid(schedulerData, newEvent)) {
+                if(this.checkMultipleValid(schedulerData, events, event.start, newEnd)){
+                    this.updateMultiple(schedulerData, events, event.start, newEnd);
+                }
+                else{
+                    showWarning(this.props.overlapMessage);
+                }
+            }
+            else {
+                showWarning('Not allowed to plan outside working hours.');
+            }
+            this.setState({
+                viewModel: schedulerData
+            })
+        }
+        else {
+            showWarning('No planning allowed in the past.');
+        }
     }
 
     debug = (...args) => {

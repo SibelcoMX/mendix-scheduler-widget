@@ -5,7 +5,7 @@
             <widgetFile path="SchedulerJS.xml"/>
         </widgetFiles>
         <files>
-            <file path="com/sibelco/widget/custom/schedulerjs"/>
+            <file path="sibelco/schedulerjs"/>
         </files>
     </clientModule>
 </package>
