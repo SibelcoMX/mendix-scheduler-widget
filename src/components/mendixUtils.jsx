@@ -26,20 +26,24 @@ executeMicroflow = (microFlow) => {
 /**
 * Execute a microflow as Promise with one object
 *
-* @name executeMicroflowWithObject
+* @name executeMicroflowWithObjects
 * @param microflow Microflow name
-* @param guid
+* @param guids
 */
-executeMicroflowWithObject = (microFlow, guid) => {
+executeMicroflowWithObjects = (microFlow, guids) => {
     return new Promise((resolve, reject) => {
         if (!microFlow || microFlow === "") {
             return reject(new Error("Microflow parameter cannot be empty!"));
+        }
+        if (!guids) {
+            return reject(new Error("Microflow guids cannot be empty!"));
         }
         try {
             window.mx.data.action({
                 params: {
                     actionname: microFlow,
-                    guid: guid
+                    applyto: "selection",
+                    guids: guids
                 },
                 callback: resolve,
                 error: reject

@@ -9,7 +9,7 @@ import Col from 'antd/lib/col'
 import Row from 'antd/lib/row'
 import Button from 'antd/lib/button'
 import { restElement } from "@babel/types";
-import "./components/MendixUtils";
+import "./components/mendixUtils";
 import { SearchField } from './components/SearchField';
 import "./ui/SearchField.css";
 
@@ -55,64 +55,6 @@ class SchedulerJS extends Component {
         };
     }
 
-    componentDidMount() {
-        // date and time settings
-
-        moment.locale('en', {
-            week: {
-                dow: 1,
-                doy: 4
-            }
-        });
-
-        // create schedulerdata with settings
-
-        let schedulerData = new SchedulerData(
-            new moment(new Date()).format('YYYY-MM-DD'),
-            ViewTypes.Week, false, false,
-            {
-                unplannedSlotColor: '#DDDDDD',
-                dayResourceTableWidth: '16%',
-                weekResourceTableWidth: '16%',
-                monthResourceTableWidth: '16%',
-                customResourceTableWidth: '16%',
-            
-                dayCellWidth: '2%',
-                weekCellWidth: '12%',
-                monthCellWidth: '5%',
-                customCellWidth: '6%',
-
-                dayMaxEvents: this.props.maxEvents,
-                weekMaxEvents: this.props.maxEvents,
-                monthMaxEvents: this.props.maxEvents,
-                quarterMaxEvents: this.props.maxEvents,
-                yearMaxEvents: this.props.maxEvents,
-                customMaxEvents: this.props.maxEvents,
-
-                setMinuteStep: this.props.minuteStep,
-                schedulerWidth: '90%',
-                schedulerMaxHeight: this.props.schedulerMaxHeight !== 0 ? this.props.schedulerMaxHeight : 650,
-                nonAgendaDayCellHeaderFormat: 'M/D|HH:mm',
-                views: [
-                    { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
-                    { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
-                    { viewName: 'Week', viewType: ViewTypes.Week, showAgenda: false, isEventPerspective: false },
-                    { viewName: '2 Weeks', viewType: ViewTypes.Custom1, showAgenda: false, isEventPerspective: false },
-                    { viewName: 'Month', viewType: ViewTypes.Month, showAgenda: false, isEventPerspective: false }
-                ]
-            },
-            {
-                getCustomDateFunc: this.getCustomDate,
-                isNonWorkingTimeFunc: this.isNonWorkingTime,
-                getDateLabelFunc: this.getDateLabel,
-            },
-            moment
-        );
-
-        this.setResources(schedulerData);
-        this.setTasks(schedulerData);
-    }
-
     shouldComponentUpdate(nextProps, nextState){
         let needUpdate = true;
         if(this.props !== nextProps){
@@ -144,28 +86,6 @@ class SchedulerJS extends Component {
         return needUpdate;
     }
 
-    componentDidUpdate(prevProps) {
-
-        if (prevProps !== this.props) {
-
-            let schedulerData = this.state.viewModel;
-
-            // check if planningarea has changed
-
-            if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined) {
-                this.setState({
-                    tasks: undefined,
-                    resources: undefined
-                });
-                this.setResources(schedulerData);
-                this.setTasks(schedulerData);
-                this.setState({
-                    viewModel: schedulerData
-                });
-            }
-        }
-    }
-
     render() {
         const { viewModel, tasks } = this.state;
         let searchField = <div />;
@@ -189,7 +109,7 @@ class SchedulerJS extends Component {
 
             if (this.state.headerItem !== undefined) {
                 if (this.props.editPermission.value === true) {
-                    popover =
+                        popover =
                         <AddMorePopover headerItem={this.state.headerItem}
                             eventItemClick={this.eventClicked}
                             viewEventClick={this.unplan}
@@ -249,6 +169,105 @@ class SchedulerJS extends Component {
         }
         else{
             return(<div></div>);
+        }
+    }
+
+    componentDidMount() {
+        // date and time settings
+
+        moment.locale('en', {
+            week: {
+                dow: 1,
+                doy: 4
+            }
+        });
+
+        // create schedulerdata with settings
+
+        let schedulerData = new SchedulerData(
+            new moment(new Date()).format('YYYY-MM-DD'),
+            ViewTypes.Week, false, false,
+            {
+                unplannedSlotColor: '#DDDDDD',
+                dayResourceTableWidth: '16%',
+                weekResourceTableWidth: '16%',
+                monthResourceTableWidth: '16%',
+                customResourceTableWidth: '16%',
+            
+                dayCellWidth: '2%',
+                weekCellWidth: '12%',
+                monthCellWidth: '5%',
+                customCellWidth: '6%',
+
+                dayMaxEvents: this.props.maxEvents,
+                weekMaxEvents: this.props.maxEvents,
+                monthMaxEvents: this.props.maxEvents,
+                quarterMaxEvents: this.props.maxEvents,
+                yearMaxEvents: this.props.maxEvents,
+                customMaxEvents: this.props.maxEvents,
+
+                setMinuteStep: this.props.minuteStep.status === 'available' ? parseInt(this.props.minuteStep.value.substring(1)) : 30,
+                schedulerWidth: '90%',
+                schedulerMaxHeight: this.props.schedulerMaxHeight !== 0 ? this.props.schedulerMaxHeight : 600,
+                nonAgendaDayCellHeaderFormat: 'M/D|HH:mm',
+                views: [
+                    { viewName: 'Day', viewType: ViewTypes.Day, showAgenda: false, isEventPerspective: false },
+                    { viewName: '2 Days', viewType: ViewTypes.Custom, showAgenda: false, isEventPerspective: false },
+                    { viewName: 'Week', viewType: ViewTypes.Week, showAgenda: false, isEventPerspective: false },
+                    { viewName: '2 Weeks', viewType: ViewTypes.Custom1, showAgenda: false, isEventPerspective: false },
+                    { viewName: 'Month', viewType: ViewTypes.Month, showAgenda: false, isEventPerspective: false }
+                ]
+            },
+            {
+                getCustomDateFunc: this.getCustomDate,
+                isNonWorkingTimeFunc: this.isNonWorkingTime,
+                getDateLabelFunc: this.getDateLabel,
+            },
+            moment
+        );
+
+        this.setResources(schedulerData);
+        this.setTasks(schedulerData);
+    }
+
+    // componentDidUpdate(prevProps) {
+
+    //     if (prevProps !== this.props) {
+
+    //         let schedulerData = this.state.viewModel;
+
+    //         // check if planningarea has changed
+
+    //         if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined) {
+    //             this.setState({
+    //                 tasks: undefined,
+    //                 resources: undefined
+    //             });
+    //             this.setResources(schedulerData);
+    //             this.setTasks(schedulerData);
+    //             this.setState({
+    //                 viewModel: schedulerData
+    //             });
+    //         }
+    //     }
+    // }
+
+    componentDidUpdate(prevProps) {
+        const { viewModel } = this.state;
+
+        if (prevProps !== this.props) {
+            // check if planningarea has changed
+            if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined) {
+                this.setState({
+                    tasks: undefined,
+                    resources: undefined
+                });
+                this.setResources(viewModel);
+                this.setTasks(viewModel);
+                this.setState({
+                    viewModel: viewModel
+                });
+            }
         }
     }
 
@@ -480,6 +499,8 @@ class SchedulerJS extends Component {
                     }
                     );
                     schedulerData.setResources(resources);
+                    this.debug('setResources minuteStep', this.props.minuteStep);
+                    schedulerData.setMinuteStep(this.props.minuteStep.status === 'available' ? parseInt(this.props.minuteStep.value.substring(1)) : 30);
                     this.setState({
                         viewModel: schedulerData,
                         resources: resources,
@@ -527,6 +548,8 @@ class SchedulerJS extends Component {
                             })
                         );
                         schedulerData.setEvents(tasks);
+                        this.debug('setTasks minuteStep', this.props.minuteStep);
+                        schedulerData.setMinuteStep(this.props.minuteStep.status === 'available' ? parseInt(this.props.minuteStep.value.substring(1)) : 30);
                         this.setState({
                             viewModel: schedulerData,
                             tasks: tasks,
@@ -551,10 +574,18 @@ class SchedulerJS extends Component {
 
     updateTask(event, startDate, endDate, oldSlotId, newSlotId) {
         const schedulerData = this.state.viewModel;
+        let minuteStep = parseInt(this.props.minuteStep.value.substring(1));
+        let momentStartDate = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+        let roundStartDate = Math.floor(momentStartDate.minute() / minuteStep) * minuteStep;
+        let roundedStartDate = momentStartDate.minute(roundStartDate).second(0).toDate();
+        let momentEndDate = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+        let roundEndDate = Math.floor(momentEndDate.minute() / minuteStep) * minuteStep;
+        let roundedEndDate = momentEndDate.minute(roundEndDate).second(0).toDate();
+        this.debug('updateTask', minuteStep, momentStartDate, roundStartDate, roundedStartDate);
         getObject(event.id)
             .then((capacity) => {
-                capacity.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
-                capacity.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
+                capacity.set('StartDate', roundedStartDate);
+                capacity.set('EndDate', roundedEndDate);
                 capacity.set('ResourceID', newSlotId);
                 capacity.set('IsChanged', true)
                 if (newSlotId.startsWith('r')) {
@@ -564,14 +595,14 @@ class SchedulerJS extends Component {
                     capacity.set('EmployeeNumber', '')
                 }
                 commitObject(capacity)
-                .then(() => {
-                    this.setState({
-                        viewModel: schedulerData
-                    });
-                })
-                .catch(error => {
-                    showMendixError('updateTask, commitObject', error);
-                })
+                    .then(() => {
+                        this.setState({
+                            viewModel: schedulerData
+                        });
+                    })
+                    .catch(error => {
+                        showMendixError('updateTask, commitObject', error);
+                    })
             })
             .catch(error => {
                 showMendixError('updateTask, getObject', error);
@@ -615,6 +646,17 @@ class SchedulerJS extends Component {
             showWarning('You do not have permission to edit an operation.');
         }
     };
+
+    // eventClicked = (schedulerData, event) => {
+    //     if (this.props.editPermission.value) {
+    //         let guids = new Array(event.id);
+    //         this.debug('eventClicked', guids);
+    //         executeMicroflowWithObjects(this.props.taskClick, guids);
+    //     }
+    //     else {
+    //         showWarning('You do not have permission to edit an operation.');
+    //     }
+    // };
 
     // unplan a resource. the association will be set to the resource's parent, it's workcenter.
     unplan = (schedulerData, event) => {
@@ -840,46 +882,54 @@ class SchedulerJS extends Component {
     }
 
     updateMultiple = (schedulerData, events, startDate, endDate) => {
+        let minuteStep = parseInt(this.props.minuteStep.value.substring(1));
+        let momentStartDate = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+        let roundStartDate = Math.floor(momentStartDate.minute() / minuteStep) * minuteStep;
+        let roundedStartDate = momentStartDate.minute(roundStartDate).second(0).toDate();
+        let momentEndDate = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+        let roundEndDate = Math.floor(momentEndDate.minute() / minuteStep) * minuteStep;
+        let roundedEndDate = momentEndDate.minute(roundEndDate).second(0).toDate();
+        this.debug('updateMultiple', minuteStep, momentStartDate, roundStartDate, roundedStartDate);
         let guids = events.map((event => {
             return event.id
         }));
         getObjects(guids)
-        .then((capacities) => {
-            let commitList = [];
-            capacities.forEach((capacity) => {
-                capacity.set('StartDate', moment(startDate, 'YYYY-MM-DD HH:mm:ss').toDate());
-                capacity.set('EndDate', moment(endDate, 'YYYY-MM-DD HH:mm:ss').toDate());
-                capacity.set('IsChanged', true);
-                let thisEvent = events.find(x => x.id === capacity.getGuid());
-                let newResourceId = thisEvent.resourceId;
-                console.log('event: ' + JSON.stringify(thisEvent));
-                console.log('ResourceId: ' + newResourceId);
-                capacity.set('ResourceID', newResourceId);
-                if (newResourceId.startsWith('r')) {
-                    capacity.set('EmployeeNumber', newResourceId.substr(1))
-                }
-                else {
-                    capacity.set('EmployeeNumber', '')
-                }
-                commitList.push(capacity);
-            })
-            
-            commitObjects(commitList)
-            .then(() => {
-                events.forEach((event) => {
-                    schedulerData.moveEvent(event, event.resourceId, event.slotName, startDate, endDate);
-                });
-                this.setState({
-                    viewModel: schedulerData
-                });
+            .then((capacities) => {
+                let commitList = [];
+                capacities.forEach((capacity) => {
+                    capacity.set('StartDate', roundedStartDate);
+                    capacity.set('EndDate', roundedEndDate);
+                    capacity.set('IsChanged', true);
+                    let thisEvent = events.find(x => x.id === capacity.getGuid());
+                    let newResourceId = thisEvent.resourceId;
+                    console.log('event: ' + JSON.stringify(thisEvent));
+                    console.log('ResourceId: ' + newResourceId);
+                    capacity.set('ResourceID', newResourceId);
+                    if (newResourceId.startsWith('r')) {
+                        capacity.set('EmployeeNumber', newResourceId.substr(1))
+                    }
+                    else {
+                        capacity.set('EmployeeNumber', '')
+                    }
+                    commitList.push(capacity);
+                })
+                
+                commitObjects(commitList)
+                    .then(() => {
+                        events.forEach((event) => {
+                            schedulerData.moveEvent(event, event.resourceId, event.slotName, roundedStartDate, roundedEndDate);
+                        });
+                        this.setState({
+                            viewModel: schedulerData
+                        });
+                    })
+                    .catch(error => {
+                        showMendixError('updateMultiple, commitObjects', error);
+                    })
             })
             .catch(error => {
-                showMendixError('updateMultiple, commitObjects', error);
-            })
-        })
-        .catch(error => {
-            showMendixError('updateMultiple, getObjects', error);
-        });
+                showMendixError('updateMultiple, getObjects', error);
+            });
     }
 
     moveEvent = (schedulerData, event, slotId, slotName, start, end) => {
