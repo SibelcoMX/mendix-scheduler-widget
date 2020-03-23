@@ -6,3 +6,4 @@ node_modules/
 # node_modules there are ignored by a .gitignore file in that directory
 
 !node_modules/react-big-scheduler/
+!node_modules/react-big-scheduler/*
