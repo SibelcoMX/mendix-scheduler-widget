@@ -893,6 +893,12 @@ class SchedulerJS extends Component {
         let guids = events.map((event => {
             return event.id
         }));
+        events.forEach((event) => {
+            schedulerData.moveEvent(event, event.resourceId, event.slotName, roundedStartDate, roundedEndDate);
+        });
+        this.setState({
+            viewModel: schedulerData
+        });
         getObjects(guids)
             .then((capacities) => {
                 let commitList = [];
@@ -916,12 +922,7 @@ class SchedulerJS extends Component {
                 
                 commitObjects(commitList)
                     .then(() => {
-                        events.forEach((event) => {
-                            schedulerData.moveEvent(event, event.resourceId, event.slotName, roundedStartDate, roundedEndDate);
-                        });
-                        this.setState({
-                            viewModel: schedulerData
-                        });
+                        
                     })
                     .catch(error => {
                         showMendixError('updateMultiple, commitObjects', error);

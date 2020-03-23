@@ -23,7 +23,7 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@mendix/pluggable-widgets-tools": "^8.3.1", 
+    "@mendix/pluggable-widgets-tools": "^8.3.1",
     "mendix-client": "^7.15.8",
     "webpack-bundle-analyzer": "^3.6.0"
   },

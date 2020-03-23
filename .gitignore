@@ -1,3 +1,8 @@
 dist/
 node_modules/
 *.log
+
+# include the changes to the react-big-scheduler files
+# node_modules there are ignored by a .gitignore file in that directory
+
+!node_modules/react-big-scheduler/
