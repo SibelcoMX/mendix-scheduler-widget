@@ -821,6 +821,7 @@ class SchedulerJS extends Component {
                                         mxObject.set('Movable', false);
                                         mxObject.set('IsVacation', true);
                                         mxObject.set('ResourceID', slotId);
+                                        mxObject.set('PlanningPlant', this.props.planningArea.value)
                                         let newEvent = {
                                             id: mxObject.getGuid(),
                                             title: this.props.vacationTitle,
