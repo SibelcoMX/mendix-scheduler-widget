@@ -12,9 +12,6 @@ import { restElement } from "@babel/types";
 import "./components/mendixUtils";
 import { SearchField } from './components/SearchField';
 import "./ui/SearchField.css";
-import { Task } from './Classes/Task';
-import { Resource } from './Classes/Resource';
-
 
 // Do not forget to copy 'the react-big-scheduler/lib' folder over the original folder
 
@@ -489,7 +486,13 @@ class SchedulerJS extends Component {
                     var resources = [];
                     this.debug("Received resources", mxObjects.length);
                     mxObjects.forEach(resource =>{
-                        resources.push(new Resource(resource));
+                        resources.push({
+                            id: resource.get("ResourceID"),
+                            name: resource.get("Name"),
+                            groupOnly: resource.get("GroupOnly"),
+                            parentId: resource.get("ParentID"),
+                            isUnplan: resource.get("ResourceID").startsWith("u") ? true : false,
+                        });
                     }
                     );
                     schedulerData.setResources(resources);
@@ -522,7 +525,24 @@ class SchedulerJS extends Component {
                         var tasks = [];
                         this.debug("Received tasks", mxObjects.length);
                         mxObjects.forEach(task =>
-                            tasks.push(new Task(task))
+                            tasks.push({
+                                id: task.getGuid(),
+                                title: task.get("Title"),
+                                description: task.get('Description'),
+                                start: task.get("StartDate"),
+                                end: task.get("EndDate"),
+                                bgColor: task.get("BgColor"),
+                                showPopover: task.get("ShowTooltip"),
+                                resizable: task.get("Resizable"),
+                                startResizable: task.get("StartResizable"),
+                                endResizable: task.get("EndResizable"),
+                                movable: task.get("Movable"),
+                                resourceId: task.get("ResourceID"),
+                                isVacation: task.get("IsVacation"),
+                                orderNumber: task.get("OrderNumber"),
+                                employeeNumber: task.get("EmployeeNumber"),
+                                operationID: task.get("OperationID"),
+                            })
                         );
                         schedulerData.setEvents(tasks);
                         this.debug('setTasks minuteStep', this.props.minuteStep);
@@ -799,7 +819,18 @@ class SchedulerJS extends Component {
                                         mxObject.set('IsVacation', true);
                                         mxObject.set('ResourceID', slotId);
                                         mxObject.set('PlanningPlant', this.props.planningArea.value)
-                                        let newEvent = new Task(mxObject);
+                                        let newEvent = {
+                                            id: mxObject.getGuid(),
+                                            title: this.props.vacationTitle,
+                                            start: moment(start, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                            end: moment(end, 'YYYY-MM-DD HH:mm:ss').toDate(),
+                                            resourceId: slotId,
+                                            bgColor: 'black',
+                                            resizable: true,
+                                            movable: true,
+                                            startResizable: true,
+                                            endResizable: true,
+                                         }
                                         commitObject(mxObject)
                                             .then(() => {
                                                 schedulerData.addEvent(newEvent);
