@@ -162,7 +162,7 @@ class SchedulerJS extends Component {
                         findEvents={this.findEvents}
                         checkMultipleValid={this.checkMultipleValid}
                         checkIfEventIsValid={this.checkIfEventIsValid}
-                        showColumns={this.showColumns}
+                        // showColumns={this.showColumns}
                         // showWorkingHours={this.showWorkingHours}
                     />
                     {popover}
@@ -277,20 +277,19 @@ class SchedulerJS extends Component {
                     viewModel: viewModel
                 });
             }
-            if(prevProps.workStartTime.value !== this.props.workStartTime.value
-                || prevProps.workEndTime.value !== this.props.workEndTime.value){
-                    if(this.props.workStartTime.status === 'available' && this.props.workEndTime.status === 'available'){
-                        let schedulerData = this.state.viewModel;
-                        this.showColumns(schedulerData);
-                    }
-                }
+            // if(prevProps.workStartTime.value !== this.props.workStartTime.value
+            //     || prevProps.workEndTime.value !== this.props.workEndTime.value){
+            //         if(this.props.workStartTime.status === 'available' && this.props.workEndTime.status === 'available'){
+            //             let schedulerData = this.state.viewModel;
+            //             this.showColumns(schedulerData);
+            //         }
+            //     }
         }
     }
 
     showColumns = (schedulerData) => {
-        const { localeMoment } = schedulerData;
-        let showedStartDay = (localeMoment(this.props.workStartTime.value).hour() === 0 ? 0 : localeMoment(this.props.workStartTime.value).hour() - 1);
-        let showedStopDay = (localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
+        let showedStartDay = (schedulerData.localeMoment(this.props.workStartTime.value).hour() === 0 ? 0 : localeMoment(this.props.workStartTime.value).hour() - 1);
+        let showedStopDay = (schedulerData.localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
         schedulerData.config.dayStartFrom = showedStartDay;
         schedulerData.config.dayStopTo = showedStopDay;
         this.setState({
