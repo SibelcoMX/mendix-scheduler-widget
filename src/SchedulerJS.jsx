@@ -12,6 +12,7 @@ import { restElement } from "@babel/types";
 import "./components/mendixUtils";
 import { SearchField } from './components/SearchField';
 import "./ui/SearchField.css";
+// import "../node_modules/react-big-scheduler/node_modules/react-datepicker/src/stylesheets/datepicker.scss";
 
 // Do not forget to copy 'the react-big-scheduler/lib' folder over the original folder
 
@@ -161,6 +162,8 @@ class SchedulerJS extends Component {
                         findEvents={this.findEvents}
                         checkMultipleValid={this.checkMultipleValid}
                         checkIfEventIsValid={this.checkIfEventIsValid}
+                        showColumns={this.showColumns}
+                        // showWorkingHours={this.showWorkingHours}
                     />
                     {popover}
                 </div>
@@ -224,10 +227,17 @@ class SchedulerJS extends Component {
             },
             moment
         );
+        
 
         this.setResources(schedulerData);
         this.setTasks(schedulerData);
     }
+
+    // showWorkingHours(schedulerData) {
+    //     const { localeMoment } = schedulerData;
+    //     schedulerData.config.dayStartFrom = (localeMoment(this.props.workStartTime.value).hour() === 0 ? 0 : localeMoment(this.props.workStartTime.value).hour() - 1);
+    //     schedulerData.config.dayStopTo = (localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
+    // }
 
     // componentDidUpdate(prevProps) {
 
@@ -267,7 +277,25 @@ class SchedulerJS extends Component {
                     viewModel: viewModel
                 });
             }
+            if(prevProps.workStartTime.value !== this.props.workStartTime.value
+                || prevProps.workEndTime.value !== this.props.workEndTime.value){
+                    if(this.props.workStartTime.status === 'available' && this.props.workEndTime.status === 'available'){
+                        let schedulerData = this.state.viewModel;
+                        this.showColumns(schedulerData);
+                    }
+                }
         }
+    }
+
+    showColumns = (schedulerData) => {
+        const { localeMoment } = schedulerData;
+        let showedStartDay = (localeMoment(this.props.workStartTime.value).hour() === 0 ? 0 : localeMoment(this.props.workStartTime.value).hour() - 1);
+        let showedStopDay = (localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
+        schedulerData.config.dayStartFrom = showedStartDay;
+        schedulerData.config.dayStopTo = showedStopDay;
+        this.setState({
+            viewModel: schedulerData
+        });
     }
 
     handleSearch = (userInput) => {
@@ -619,7 +647,7 @@ class SchedulerJS extends Component {
 
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
-        schedulerData.config.customCellWidth = view.viewType === ViewTypes.Custom ? '1%' : '6%';
+        schedulerData.config.customCellWidth = view.viewType === ViewTypes.Custom ? '2%' : '6%';
         this.setTasks(schedulerData);
     }
 
