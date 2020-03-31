@@ -654,7 +654,7 @@ class SchedulerJS extends Component {
     }
 
     onSelectDate = (schedulerData, date) => {
-        schedulerData.setDate(date.startOf('hour'));
+        schedulerData.setDate(date);
         schedulerData._createHeaders();
         // schedulerData = this.showWorkingHours(schedulerData);
         this.setTasks(schedulerData);
