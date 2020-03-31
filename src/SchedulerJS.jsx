@@ -357,7 +357,13 @@ class SchedulerJS extends Component {
         schedulerData.localeMoment(selectDate).add(1 * num, 'days').format(DATE_FORMAT),
         endDate = schedulerData.localeMoment(startDate).add(1, 'days').format(DATE_FORMAT),
         cellUnit = CellUnits.Hour;
-        if (viewType === ViewTypes.Custom1) {
+        if (viewType === ViewTypes.Custom) {
+            let today = schedulerData.localeMoment(selectDate).startOf('day').format(DATE_FORMAT);
+            startDate = num === 0 ? today : schedulerData.localeMoment(today).add(1 * num, 'days').format(DATE_FORMAT);
+            endDate = schedulerData.localeMoment(startDate).add(1, 'days').format(DATE_FORMAT);
+            cellUnit = CellUnits.Hour;
+        }
+        else if (viewType === ViewTypes.Custom1) {
             let monday = schedulerData.localeMoment(selectDate).startOf('week').format(DATE_FORMAT);
             startDate = num === 0 ? monday : schedulerData.localeMoment(monday).add(1 * num, 'weeks').format(DATE_FORMAT);
             endDate = schedulerData.localeMoment(startDate).add(1, 'weeks').endOf('week').format(DATE_FORMAT);
@@ -643,13 +649,14 @@ class SchedulerJS extends Component {
         schedulerData.config.customCellWidth = view.viewType === ViewTypes.Custom ? '2%' : '6%';
         schedulerData = this.showWorkingHours(schedulerData);
         schedulerData._createHeaders();
-        schedulerData._createRenderData();
+        // schedulerData._createRenderData();
         this.setTasks(schedulerData);
     }
 
     onSelectDate = (schedulerData, date) => {
-        schedulerData.setDate(date);
-        schedulerData = this.showWorkingHours(schedulerData);
+        schedulerData.setDate(date.startOf('hour'));
+        schedulerData._createHeaders();
+        // schedulerData = this.showWorkingHours(schedulerData);
         this.setTasks(schedulerData);
     }
 
