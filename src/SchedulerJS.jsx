@@ -163,7 +163,7 @@ class SchedulerJS extends Component {
                         checkMultipleValid={this.checkMultipleValid}
                         checkIfEventIsValid={this.checkIfEventIsValid}
                         // showColumns={this.showColumns}
-                        // showWorkingHours={this.showWorkingHours}
+                        showWorkingHours={this.showWorkingHours}
                     />
                     {popover}
                 </div>
@@ -228,16 +228,19 @@ class SchedulerJS extends Component {
             moment
         );
         
-
         this.setResources(schedulerData);
         this.setTasks(schedulerData);
     }
 
-    // showWorkingHours(schedulerData) {
-    //     const { localeMoment } = schedulerData;
-    //     schedulerData.config.dayStartFrom = (localeMoment(this.props.workStartTime.value).hour() === 0 ? 0 : localeMoment(this.props.workStartTime.value).hour() - 1);
-    //     schedulerData.config.dayStopTo = (localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
-    // }
+    showWorkingHours = (schedulerData) => {
+        const { localeMoment } = schedulerData;
+
+        let showedStartDay = (schedulerData.localeMoment(this.props.workStartTime.value).hour() === 0 ? 0 : localeMoment(this.props.workStartTime.value).hour() - 1);
+        let showedStopDay = (schedulerData.localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
+        schedulerData.config.dayStartFrom = showedStartDay;
+        schedulerData.config.dayStopTo = showedStopDay;
+        return schedulerData;
+    }
 
     // componentDidUpdate(prevProps) {
 
@@ -277,13 +280,6 @@ class SchedulerJS extends Component {
                     viewModel: viewModel
                 });
             }
-            // if(prevProps.workStartTime.value !== this.props.workStartTime.value
-            //     || prevProps.workEndTime.value !== this.props.workEndTime.value){
-            //         if(this.props.workStartTime.status === 'available' && this.props.workEndTime.status === 'available'){
-            //             let schedulerData = this.state.viewModel;
-            //             this.showColumns(schedulerData);
-            //         }
-            //     }
         }
     }
 
@@ -292,21 +288,19 @@ class SchedulerJS extends Component {
         let showedStopDay = (schedulerData.localeMoment(this.props.workEndTime.value).hour() === 23 ? 23 : localeMoment(this.props.workEndTime.value).hour() + 1);
         schedulerData.config.dayStartFrom = showedStartDay;
         schedulerData.config.dayStopTo = showedStopDay;
-        this.setState({
-            viewModel: schedulerData
-        });
+        return schedulerData;
     }
 
     handleSearch = (userInput) => {
         let schedulerData = this.state.viewModel;
         let event = this.state.tasks.find(function(task) { return task.operationID === userInput });
-        // schedulerData.viewType = ViewTypes.Day;
-        // schedulerData.cellUnit = CellUnits.Hour;
-
-        this.eventClicked(schedulerData, event);
-
+        schedulerData.viewType = ViewTypes.Day;
+        schedulerData.cellUnit = CellUnits.Hour;
+        schedulerData = this.showWorkingHours(schedulerData);
+        schedulerData._createHeaders();
+        // schedulerData._createRenderData();
         this.onSelectDate(schedulerData, event.start);
-
+        this.eventClicked(schedulerData, event);
     }
 
     onSetAddMoreState = (newState) => {
@@ -647,11 +641,15 @@ class SchedulerJS extends Component {
     onViewChange = (schedulerData, view) => {
         schedulerData.setViewType(view.viewType, view.showAgenda, view.isEventPerspective);
         schedulerData.config.customCellWidth = view.viewType === ViewTypes.Custom ? '2%' : '6%';
+        schedulerData = this.showWorkingHours(schedulerData);
+        schedulerData._createHeaders();
+        schedulerData._createRenderData();
         this.setTasks(schedulerData);
     }
 
     onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
+        schedulerData = this.showWorkingHours(schedulerData);
         this.setTasks(schedulerData);
     }
 
