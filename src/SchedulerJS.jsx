@@ -164,6 +164,7 @@ class SchedulerJS extends Component {
                         checkIfEventIsValid={this.checkIfEventIsValid}
                         // showColumns={this.showColumns}
                         showWorkingHours={this.showWorkingHours}
+                        unplannAll={this.unplanAll}
                     />
                     {popover}
                 </div>
@@ -490,9 +491,12 @@ class SchedulerJS extends Component {
                             {showButton ? (
                                 <span>
                                     <Button onClick={() => { this.unplan(schedulerData, eventItem); }}>Unplan</Button>
+                                    <Button onClick={() => { this.unplanAll(schedulerData, eventItem); }}>Unplan All</Button>
                                 </span>
                             ) : (
-                                    <span />
+                                    <span>
+                                        <Button onClick={() => { this.unplanAll(schedulerData, eventItem); }}>Unplan All</Button>
+                                    </span>
                                 )}
 
                         </Col>
@@ -726,6 +730,70 @@ class SchedulerJS extends Component {
             }
         }
     };
+
+    unplanAll = (schedulerData, event) => {
+
+        let events = this.findEvents(event);
+
+        let processedEvents = [];
+
+        let resources = [];
+        resources = this.state.resources.map(function (res) {
+            return ({
+                id: res.id,
+                parentId: res.parentId
+            });
+        });
+
+        function findParent(idResource) {
+            for (let i = 0; i < resources.length; i++) {
+                if (resources[i].id === idResource) {
+                    return resources[i].parentId;
+                }
+            }
+        }
+
+        events.map((event) => {
+            if (event.resourceId.startsWith('r')) {
+                let workcenterId = findParent(event.resourceId);
+                let newWorkcenterId = workcenterId.replace('w', 'u');
+                schedulerData.moveEvent(event, newWorkcenterId, event.title, event.start, event.end);
+                processedEvents.push(event);
+            }
+        });
+
+        this.setState({
+            viewModel: schedulerData
+        });
+
+        if(processedEvents.length > 0){
+            let guids = processedEvents.map((event => {
+                return event.id
+            }));
+            getObjects(guids)
+            .then((capacities) => {
+                let commitList = [];
+                capacities.forEach((capacity) => {
+                    capacity.set('IsChanged', true);
+                    capacity.set('EmployeeNumber', '')
+                    capacity.set('ResourceID', processedEvents[0].resourceId);
+                    commitList.push(capacity);
+                })
+                
+                commitObjects(commitList)
+                    .then(() => {
+                        
+                    })
+                    .catch(error => {
+                        showMendixError('unplanAll, commitObjects', error);
+                    })
+            })
+            .catch(error => {
+                showMendixError('unplanAll, getObjects', error);
+            });
+        }
+    };
+
 
     // function to check if the startTime of an event is allowed, returns a boolean
 
