@@ -975,7 +975,12 @@ class SchedulerJS extends Component {
             if(this.checkConflictOccurred(schedulerData, event, start, end, event.newSlotId !== undefined ? event.newSlotId : event.resourceId)){
                 valid = false;
             }
+            if(!!events.find(x => x.resourceId === event.resourceId && x.id !== event.id && x.resourceId.startsWith('r'))){
+                valid = false;
+                console.log('Possible overlap' + JSON.stringify(events.find(x => x.resourceId === event.resourceId && x.id !== event.id && x.resourceId.startsWith('r'))));
+            }
         });
+
         return valid;
     }
 
