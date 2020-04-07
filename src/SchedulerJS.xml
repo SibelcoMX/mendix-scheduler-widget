@@ -89,6 +89,13 @@
                 <caption>Overlap message</caption>
                 <description/>
             </property>
+            <property key="reloadTasksWidget" type="attribute">
+                <caption>Boolean to reload tasks</caption>
+                <description>This boolean is used to reload the tasks from the server after changes made in a Mendix page</description>
+                <attributeTypes>
+                    <attributeType name="Integer"/>
+                </attributeTypes>
+            </property> 
 
         </propertyGroup>
 

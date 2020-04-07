@@ -12,6 +12,7 @@ import { restElement } from "@babel/types";
 import "./components/mendixUtils";
 import { SearchField } from './components/SearchField';
 import "./ui/SearchField.css";
+import { hot } from "react-hot-loader/root";
 // import "../node_modules/react-big-scheduler/node_modules/react-datepicker/src/stylesheets/datepicker.scss";
 
 // Do not forget to copy 'the react-big-scheduler/lib' folder over the original folder
@@ -66,6 +67,7 @@ class SchedulerJS extends Component {
                 || this.props.showWeekend.status !== 'available'
                 || this.props.allowOutsideHoursPlanning.status !== 'available'
                 || this.props.minuteStep.status !== 'available'
+
                 ){
                     needUpdate = false;
             }
@@ -82,7 +84,17 @@ class SchedulerJS extends Component {
             needUpdate = true;
         }
 
-        console.log(this.props.planningArea.value + ' - ' + nextProps.planningArea.value + ' + ' + needUpdate);
+        console.log('reload??? ' + this.props.reloadTasksWidget.value);
+
+        if(this.props.reloadTasksWidget.value !== nextProps.reloadTasksWidget.value){
+            console.log('RELOAD VALUE:' + nextProps.reloadTasksWidget.value);
+            // this.setState({
+            //     tasks: undefined
+            // });
+            nextState.tasks = undefined;
+            needUpdate = true;
+        }
+
         return needUpdate;
     }
 
@@ -165,6 +177,7 @@ class SchedulerJS extends Component {
                         // showColumns={this.showColumns}
                         showWorkingHours={this.showWorkingHours}
                         unplannAll={this.unplanAll}
+                        reloadTasks={this.reloadTasks}
                     />
                     {popover}
                 </div>
@@ -176,6 +189,7 @@ class SchedulerJS extends Component {
     }
 
     componentDidMount() {
+
         // date and time settings
 
         moment.locale('en', {
@@ -187,7 +201,7 @@ class SchedulerJS extends Component {
 
         // create schedulerdata with settings
 
-        let schedulerData = new SchedulerData(
+        const schedulerData = new SchedulerData(
             new moment(new Date()).format('YYYY-MM-DD'),
             ViewTypes.Week, false, false,
             {
@@ -266,8 +280,8 @@ class SchedulerJS extends Component {
     // }
 
     componentDidUpdate(prevProps) {
+        console.log('Component updated');
         const { viewModel } = this.state;
-
         if (prevProps !== this.props) {
             // check if planningarea has changed
             if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined) {
@@ -280,8 +294,24 @@ class SchedulerJS extends Component {
                 this.setState({
                     viewModel: viewModel
                 });
+                console.log('plant changed');
             }
         }
+        if((prevProps.reloadTasksWidget.value !== this.props.reloadTasksWidget.value) && this.props.reloadTasksWidget.status === 'available'){
+            //this.reloadTasks(viewModel);
+            this.forceUpdate();
+
+            this.setTasks(this.state.viewModel);
+            console.log('NEED RELOAD');
+        }
+
+    }
+
+    reloadTasks = (schedulerData) => {
+        this.setState({
+            tasks: undefined
+        });
+        this.setTasks(schedulerData);
     }
 
     showColumns = (schedulerData) => {
@@ -542,6 +572,7 @@ class SchedulerJS extends Component {
     }
 
     setTasks = (schedulerData) => {
+        console.log('setTasks state full? ' + !!this.state.tasks);
         if(this.state.tasks === undefined){
             let tasksLoading = this.state.tasksLoading;
             if (tasksLoading === false) {
@@ -956,8 +987,6 @@ class SchedulerJS extends Component {
     }
 
     findEvents = (event) => {
-        console.log('find events');
-        console.log('operationID: ' + event.operationID);
         const tasks = this.state.tasks;
         let result = [];
         tasks.map(function (task) {
@@ -969,7 +998,6 @@ class SchedulerJS extends Component {
     }
 
     checkMultipleValid = (schedulerData, events, start, end) => {
-        console.log('check multiple valid');
         let valid = true;
         events.forEach((event) => {
             if(this.checkConflictOccurred(schedulerData, event, start, end, event.newSlotId !== undefined ? event.newSlotId : event.resourceId)){
@@ -1011,8 +1039,6 @@ class SchedulerJS extends Component {
                     capacity.set('IsChanged', true);
                     let thisEvent = events.find(x => x.id === capacity.getGuid());
                     let newResourceId = thisEvent.resourceId;
-                    console.log('event: ' + JSON.stringify(thisEvent));
-                    console.log('ResourceId: ' + newResourceId);
                     capacity.set('ResourceID', newResourceId);
                     if (newResourceId.startsWith('r')) {
                         capacity.set('EmployeeNumber', newResourceId.substr(1))
@@ -1156,4 +1182,4 @@ class SchedulerJS extends Component {
     }
 }
 
-export default withDragDropContext(SchedulerJS); 
+export default hot(withDragDropContext(SchedulerJS)); 
