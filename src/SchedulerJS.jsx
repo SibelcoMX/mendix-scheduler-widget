@@ -178,6 +178,7 @@ class SchedulerJS extends Component {
                         showWorkingHours={this.showWorkingHours}
                         unplannAll={this.unplanAll}
                         reloadTasks={this.reloadTasks}
+                        eventItemTemplateResolver={this.eventItemTemplateResolver}
                     />
                     {popover}
                 </div>
@@ -348,6 +349,23 @@ class SchedulerJS extends Component {
                 ...newState,
             });
         }
+    }
+
+    eventItemTemplateResolver = (schedulerData, event, bgColor, isStart, isEnd, mustAddCssClass, mustBeHeight, agendaMaxEventWidth) => {
+        let borderWidth = isStart ? '4' : '0';
+        let borderColor =  '#000', backgroundColor = '#80C5F6';
+        let titleText = schedulerData.behaviors.getEventTextFunc(schedulerData, event);
+        // if(!!event.type){
+        //     borderColor = event.type == 1 ? 'rgba(0,139,236,1)' : (event.type == 3 ? 'rgba(245,60,43,1)' : '#999');
+        //     backgroundColor = event.type == 1 ? '#80C5F6' : (event.type == 3 ? '#FA9E95' : '#D9D9D9');
+        // }
+        let divStyle = {borderLeft: borderWidth + 'px solid ' + borderColor, backgroundColor: bgColor, height: mustBeHeight };
+        if(!!agendaMaxEventWidth)
+            divStyle = {...divStyle, maxWidth: agendaMaxEventWidth};
+
+        return <div key={event.id} className={mustAddCssClass} style={divStyle}>
+            <span style={{marginLeft: '0px', lineHeight: `${mustBeHeight}px` }}>{titleText}</span>
+        </div>;
     }
 
     nonAgendaCellHeaderTemplateResolver = (schedulerData, item, formattedDateItems, style) => {
@@ -862,11 +880,21 @@ class SchedulerJS extends Component {
             return true;
         }
         else {
+            function checkEndTime(end, allowedEnd){
+                if(end > allowedEnd){
+                    alert('This operation will be finnished outside working hours.')
+                }
+            }
+            
 
-            if (this.props.showWeekend.value === true && startHour >= allowedStartHour && startHour <= allowedEndHour && endHour >= allowedStartHour && endHour <= allowedEndHour) {
+            //if (this.props.showWeekend.value === true && startHour >= allowedStartHour && startHour <= allowedEndHour && endHour >= allowedStartHour && endHour <= allowedEndHour) {
+            if (this.props.showWeekend.value === true && startHour >= allowedStartHour && startHour <= allowedEndHour) {
+                checkEndTime(endHour, allowedEndHour);
                 return true;
             }
-            else if (dayOfWeek >= 0 && dayOfWeek <= 4 && startHour >= allowedStartHour && startHour <= allowedEndHour && endHour >= allowedStartHour && endHour <= allowedEndHour) {
+            //else if (dayOfWeek >= 0 && dayOfWeek <= 4 && startHour >= allowedStartHour && startHour <= allowedEndHour && endHour >= allowedStartHour && endHour <= allowedEndHour) {
+            else if (dayOfWeek >= 0 && dayOfWeek <= 4 && startHour >= allowedStartHour && startHour <= allowedEndHour) {
+                checkEndTime(endHour, allowedEndHour);
                 return true
             }
             else {
@@ -1070,17 +1098,34 @@ class SchedulerJS extends Component {
         console.log(startMoment + ' < ' + currentDateTime);
         if(!(startMoment < currentDateTime)){
             let events = this.findEvents(event);
-            let eventTocheck = {
-                id: event.id,
-                start: start,
-                end: end
-            };
-            if(this.checkIfEventIsValid(schedulerData, eventTocheck)){
-                if(!this.checkConflictOccurred(schedulerData, event, start, end, slotId)){
-                    let currentEvent = events.find(x => x.id === event.id);
-                    currentEvent.resourceId = slotId;
-                    if(this.checkMultipleValid(schedulerData, events, start, end)){
-                        this.updateMultiple(schedulerData, events, start, end);
+            let allUnplanned = true;
+            for(let i = 0; i < events.length; i++){
+                if(!events[i].resourceId.startsWith('u') || !slotId.startsWith('u')){
+                    allUnplanned = false;
+                }
+            }
+            if(allUnplanned){
+                this.updateMultiple(schedulerData, events, start, end);
+            }
+            else{
+                let eventTocheck = {
+                    id: event.id,
+                    start: start,
+                    end: end
+                };
+                if(this.checkIfEventIsValid(schedulerData, eventTocheck)){
+                    if(!this.checkConflictOccurred(schedulerData, event, start, end, slotId)){
+                        let currentEvent = events.find(x => x.id === event.id);
+                        currentEvent.resourceId = slotId;
+                        if(this.checkMultipleValid(schedulerData, events, start, end)){
+                            this.updateMultiple(schedulerData, events, start, end);
+                        }
+                        else{
+                            showWarning(this.props.overlapMessage + '\n' + event.title);
+                            this.setState({
+                                viewModel: schedulerData
+                            });
+                        }
                     }
                     else{
                         showWarning(this.props.overlapMessage + '\n' + event.title);
@@ -1090,17 +1135,11 @@ class SchedulerJS extends Component {
                     }
                 }
                 else{
-                    showWarning(this.props.overlapMessage + '\n' + event.title);
+                    showWarning('Not allowed to plan outside working hours.');
                     this.setState({
                         viewModel: schedulerData
-                    });
+                    })
                 }
-            }
-            else{
-                showWarning('Not allowed to plan outside working hours.');
-                this.setState({
-                    viewModel: schedulerData
-                })
             }
         }
         else {
