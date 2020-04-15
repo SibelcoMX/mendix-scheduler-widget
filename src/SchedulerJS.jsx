@@ -60,13 +60,13 @@ class SchedulerJS extends Component {
         let needUpdate = true;
         if(this.props !== nextProps){
             if(
-                this.props.planningArea.status !== 'available'
-                || this.props.editPermission.status !== 'available'
-                || this.props.workStartTime.status !== 'available'
-                || this.props.workEndTime.status !== 'available'
-                || this.props.showWeekend.status !== 'available'
-                || this.props.allowOutsideHoursPlanning.status !== 'available'
-                || this.props.minuteStep.status !== 'available'
+                nextProps.planningArea.status !== 'available'
+                || nextProps.editPermission.status !== 'available'
+                || nextProps.workStartTime.status !== 'available'
+                || nextProps.workEndTime.status !== 'available'
+                || nextProps.showWeekend.status !== 'available'
+                || nextProps.allowOutsideHoursPlanning.status !== 'available'
+                || nextProps.minuteStep.status !== 'available'
 
                 ){
                     needUpdate = false;
@@ -78,15 +78,15 @@ class SchedulerJS extends Component {
         }
 
         if(this.props.planningArea.value !== nextProps.planningArea.value){
-            this.setState({
-                tasks: undefined
-            })
+            // this.setState({
+            //     tasks: undefined
+            // })
             needUpdate = true;
         }
 
         console.log('reload??? ' + this.props.reloadTasksWidget.value);
 
-        if(this.props.reloadTasksWidget.value !== nextProps.reloadTasksWidget.value){
+        if(this.props.reloadTasksWidget.value !== nextProps.reloadTasksWidget.value && nextProps.reloadTasksWidget.value !== 0){
             console.log('RELOAD VALUE:' + nextProps.reloadTasksWidget.value);
             // this.setState({
             //     tasks: undefined
@@ -244,8 +244,8 @@ class SchedulerJS extends Component {
             moment
         );
         
-        this.setResources(schedulerData);
-        this.setTasks(schedulerData);
+        this.setResources(schedulerData, true);
+        this.setTasks(schedulerData, true);
     }
 
     showWorkingHours = (schedulerData) => {
@@ -285,27 +285,23 @@ class SchedulerJS extends Component {
         const { viewModel } = this.state;
         if (prevProps !== this.props) {
             // check if planningarea has changed
-            if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined) {
-                this.setState({
-                    tasks: undefined,
-                    resources: undefined
-                });
-                this.setResources(viewModel);
-                this.setTasks(viewModel);
-                this.setState({
-                    viewModel: viewModel
-                });
+            if (prevProps.planningArea.value !== this.props.planningArea.value && this.props.planningArea.value !== undefined && prevProps.planningArea.value !== undefined) {
+
+                this.setResources(viewModel, true);
+                this.setTasks(viewModel, true);
+                // this.setState({
+                //     viewModel: viewModel
+                // });
                 console.log('plant changed');
             }
+            if((prevProps.reloadTasksWidget.value !== this.props.reloadTasksWidget.value) && this.props.reloadTasksWidget.status === 'available'){
+                //this.reloadTasks(viewModel);
+                // this.forceUpdate();
+    
+                this.setTasks(this.state.viewModel, true);
+                console.log('NEED RELOAD');
+            }
         }
-        if((prevProps.reloadTasksWidget.value !== this.props.reloadTasksWidget.value) && this.props.reloadTasksWidget.status === 'available'){
-            //this.reloadTasks(viewModel);
-            this.forceUpdate();
-
-            this.setTasks(this.state.viewModel);
-            console.log('NEED RELOAD');
-        }
-
     }
 
     reloadTasks = (schedulerData) => {
@@ -554,44 +550,49 @@ class SchedulerJS extends Component {
         }
     }
 
-    setResources = (schedulerData) => {
-        let resourcesLoading = this.state.resourcesLoading;
-        if (resourcesLoading === false) {
-            this.setState({
-                resourcesLoading: true
-            });
-            executeMicroflow(this.props.resourceSource)
-                .then((mxObjects) => {
-                    var resources = [];
-                    this.debug("Received resources", mxObjects.length);
-                    mxObjects.forEach(resource =>{
-                        resources.push({
-                            id: resource.get("ResourceID"),
-                            name: resource.get("Name"),
-                            groupOnly: resource.get("GroupOnly"),
-                            parentId: resource.get("ParentID"),
-                            isUnplan: resource.get("ResourceID").startsWith("u") ? true : false,
-                        });
-                    }
-                    );
-                    schedulerData.setResources(resources);
-                    this.debug('setResources minuteStep', this.props.minuteStep);
-                    schedulerData.setMinuteStep(this.props.minuteStep.status === 'available' ? parseInt(this.props.minuteStep.value.substring(1)) : 30);
-                    this.setState({
-                        viewModel: schedulerData,
-                        resources: resources,
-                        resourcesLoading: false
-                    });
-                })
-                .catch(error => {
-                    showMendixError(`setResources`, error);
+    setResources = (schedulerData, forceReload = false) => {
+        if(forceReload){
+            let resourcesLoading = this.state.resourcesLoading;
+            if (resourcesLoading === false) {
+                this.setState({
+                    resourcesLoading: true
                 });
+                executeMicroflow(this.props.resourceSource)
+                    .then((mxObjects) => {
+                        var resources = [];
+                        this.debug("Received resources", mxObjects.length);
+                        mxObjects.forEach(resource =>{
+                            resources.push({
+                                id: resource.get("ResourceID"),
+                                name: resource.get("Name"),
+                                groupOnly: resource.get("GroupOnly"),
+                                parentId: resource.get("ParentID"),
+                                isUnplan: resource.get("ResourceID").startsWith("u") ? true : false,
+                            });
+                        }
+                        );
+                        schedulerData.setResources(resources);
+                        this.debug('setResources minuteStep', this.props.minuteStep);
+                        schedulerData.setMinuteStep(this.props.minuteStep.status === 'available' ? parseInt(this.props.minuteStep.value.substring(1)) : 30);
+                        this.setState({
+                            viewModel: schedulerData,
+                            resources: resources,
+                            resourcesLoading: false
+                        });
+                    })
+                    .catch(error => {
+                        showMendixError(`setResources`, error);
+                    });
+            }
+        }
+        else {
+            schedulerData.setResources(this.state.resources);
         }
     }
 
-    setTasks = (schedulerData) => {
+    setTasks = (schedulerData, forceReload = false) => {
         console.log('setTasks state full? ' + !!this.state.tasks);
-        if(this.state.tasks === undefined){
+        if(forceReload){
             let tasksLoading = this.state.tasksLoading;
             if (tasksLoading === false) {
                 let progressId = showProgress("Loading operations...", true);
