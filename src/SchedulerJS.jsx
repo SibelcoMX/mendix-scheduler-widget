@@ -994,9 +994,11 @@ class SchedulerJS extends Component {
                                         commitObject(mxObject)
                                             .then(() => {
                                                 schedulerData.addEvent(newEvent);
-                                                this.setState({
+                                                this.setState(prevState => ({
+                                                    tasks: [...prevState.tasks, newEvent],
                                                     viewModel: schedulerData
-                                                });
+                                                  }))
+
                                             })
                                             .catch(error => {
                                                 showMendixError('newEvent, commitObject', error);
