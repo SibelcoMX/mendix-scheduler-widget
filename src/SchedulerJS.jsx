@@ -111,10 +111,7 @@ class SchedulerJS extends Component {
                 }
             }
 
-            searchField = <SearchField 
-            suggestions={suggestions}
-            handleSearch={this.handleSearch}
-        />
+            searchField = <SearchField  suggestions={suggestions} handleSearch={this.handleSearch}/>
         }
         if(viewModel != undefined){
             let popover = <div />;
@@ -659,13 +656,6 @@ class SchedulerJS extends Component {
         let momentEndDate = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
         let roundEndDate = Math.floor(momentEndDate.minute() / minuteStep) * minuteStep;
         let roundedEndDate = momentEndDate.minute(roundEndDate).second(0).toDate();
-        let taskList = [...this.state.tasks];
-        let taskIndex = taskList.findIndex(x => x.id = event.id);
-        taskList[taskIndex].start = roundStartDate;
-        taskList[taskIndex].end = roundEndDate;
-        this.setState({
-            tasks: taskList
-        });
         this.debug('updateTask', minuteStep, momentStartDate, roundStartDate, roundedStartDate);
         getObject(event.id)
             .then((capacity) => {
@@ -681,8 +671,13 @@ class SchedulerJS extends Component {
                 }
                 commitObject(capacity)
                     .then(() => {
+                        let taskList = [...this.state.tasks];
+                        let taskIndex = taskList.findIndex(x => x.id = event.id);
+                        taskList[taskIndex].start = roundStartDate;
+                        taskList[taskIndex].end = roundEndDate;
                         this.setState({
-                            viewModel: schedulerData
+                            viewModel: schedulerData,
+                            tasks: taskList
                         });
                     })
                     .catch(error => {
@@ -1093,9 +1088,7 @@ class SchedulerJS extends Component {
                 })
                 
                 commitObjects(commitList)
-                    .then(() => {
-                        
-                    })
+                    .then()
                     .catch(error => {
                         showMendixError('updateMultiple, commitObjects', error);
                     })
