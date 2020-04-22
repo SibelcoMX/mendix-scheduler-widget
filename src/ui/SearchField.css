@@ -22,6 +22,7 @@
   left: 0;
   right: 0;
   display: inline-block;
+  padding-left: 10px;
 }
 .autocomplete-items > li {
   padding-top: 10px;
