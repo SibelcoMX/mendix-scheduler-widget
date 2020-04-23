@@ -10,33 +10,9 @@ import Row from 'antd/lib/row'
 import Button from 'antd/lib/button'
 import { restElement } from "@babel/types";
 import "./components/mendixUtils";
-import { SearchField } from './components/SearchField';
-import "./ui/SearchField.css";
 import { hot } from "react-hot-loader/root";
-// import "../node_modules/react-big-scheduler/node_modules/react-datepicker/src/stylesheets/datepicker.scss";
-
-// Do not forget to copy 'the react-big-scheduler/lib' folder over the original folder
-
-
-// Changes that need to be done in node_modules/react-big-scheduler/lib files
-
-// schedulerData.JS
-// boolean that we sit in setResources depending the id (w of u)
-// 752: isUnplan: slot.isUnplan
-
-// config.JS
-// color we pass for the unplanned section. this is only a default, the scheduler accepts it as a setting
-// 60: unplannedSlotColor: 'F0FFF0',
-
-// bodyview
-// coloring the cells in the body of the unplanned section (not the resource tab)
-// 56: if (item.isUnplan && !header.nonWorkingTime) style = _extends({}, style, { backgroundColor: config.unplannedSlotColor });
-
-// resourceView
-// coloring the cells in the resource tab of the unplanned section
-// 105: var tdStyle = { height: item.rowHeight, backgroundColor: item.isUnplan ? config.unplannedSlotColor : '' };
-// 108: backgroundColor: item.isUnplan ? schedulerData.config.unplannedSlotColor : schedulerData.config.groupOnlySlotColor
-
+import { AutoComplete } from 'antd';
+import "antd/dist/antd.css"; 
 
 class SchedulerJS extends Component {
     constructor(props) {
@@ -102,16 +78,18 @@ class SchedulerJS extends Component {
         const { viewModel, tasks } = this.state;
         let searchField = <div />;
         if (tasks !== undefined) {
-            let suggestions = [];
+            const { Option } = AutoComplete;
             let map = new Map();
-            for (let item of tasks) {
-                if (!map.has(item.operationID)) {
-                    map.set(item.operationID, true);
-                    suggestions.push(item.operationID);
+            const children = tasks.map(function(task) {
+                if (!map.has(task.operationID)) {
+                    map.set(task.operationID, true);
+                    return(<Option key={task.operationIDb} value={task.operationID}>{task.subTitle}</Option>);
                 }
-            }
-
-            searchField = <SearchField suggestions={suggestions} handleSearch={this.handleSearch} />
+            });
+            searchField =
+                <AutoComplete filterOption={true} optionFilterProp={"children"} allowClear style={{ width: 200 }} onSelect={this.handleSearch} placeholder="Search">
+                    {children}
+                </AutoComplete>
         }
         if (viewModel != undefined) {
             let popover = <div />;
